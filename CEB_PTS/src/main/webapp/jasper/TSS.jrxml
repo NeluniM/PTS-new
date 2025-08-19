@@ -1,0 +1,734 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="job_card" pageWidth="1051" pageHeight="1116" orientation="Landscape" columnWidth="991" leftMargin="30" rightMargin="30" topMargin="0" bottomMargin="0">
+	<property name="ireport.scriptlethandling" value="0"/>
+	<property name="ireport.encoding" value="UTF-8"/>
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="862"/>
+	<import value="net.sf.jasperreports.engine.*"/>
+	<import value="java.util.*"/>
+	<import value="net.sf.jasperreports.engine.data.*"/>
+	<style name="Crosstab Data Text" backcolor="#FFFFFF" hAlign="Center" fontName="Arial"/>
+	<parameter name="SUBREPORT_DIR" class="java.lang.String" isForPrompting="false">
+		<defaultValueExpression><![CDATA["D:\\Samudra_Work\\CEB\\MITFIN Reports\\jrxml\\job_card\\"]]></defaultValueExpression>
+	</parameter>
+	<parameter name="@area" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[select distinct b.area ,c.line_type,(select d.line_type from MMS_ADDLINETYPE d where    d.id =  c.line_type  ) as c6, b.line_id,c.line_name,a.cycle, d.cycle_order,( a.cycle ||' - '|| d.cycle_order ) as c8,
+sum( Case when a.WAYLEAVESTATUS not like 'GOOD%' then 1 else 0  end) as WAYLEAVESTATUS,
+sum( Case when a.BASECONCRETESTATUS not like 'GOOD%' then 1 else 0  end) as  BASECONCRETESTATUS,
+sum( Case when a.ANTICLIMBINGSTATUS not like 'GOOD%' then 1 else 0  end) as  ANTICLIMBINGSTATUS,
+sum( Case when a.CONDUCTORSTATUS not like 'GOOD%' then 1 else 0  end) as  CONDUCTORSTATUS,
+sum( Case when a.EARTHCONDUCTORSTATUS  not like 'GOOD%' then 1 else 0  end) as  EARTHCONDUCTORSTATUS ,
+(select dept_nm from Gldeptm a where a.dept_id=b.area   ) as  area_name
+ from  MMS_TXNTOWERMAINTENANCE  a , MMS_ADDSUPPORT  b  , MMS_ADDLINE c, MVMMS_CYCLE d
+where b.TOWER_CONFIGURATION=2 and    a.cycle =d.cycle_id and  trim(b.line_id)  = trim(c.id)
+and trim(a.towerid) = trim(b.id)   and NOOFTAPPINGS =0 and b.area = $P!{@area}
+ and  b.status=1   and  a.status=1 and  d.status=1
+group by b.area ,c.line_type, b.line_id,c.line_name ,d.cycle_order,  a.cycle
+order by b.area ,c.line_type, b.line_id,c.line_name,d.cycle_order, a.cycle]]>
+	</queryString>
+	<field name="AREA" class="java.lang.String"/>
+	<field name="LINE_TYPE" class="java.lang.String"/>
+	<field name="C6" class="java.lang.String"/>
+	<field name="LINE_ID" class="java.math.BigDecimal"/>
+	<field name="LINE_NAME" class="java.lang.String"/>
+	<field name="CYCLE" class="java.lang.String"/>
+	<field name="CYCLE_ORDER" class="java.math.BigDecimal"/>
+	<field name="C8" class="java.lang.String"/>
+	<field name="WAYLEAVESTATUS" class="java.math.BigDecimal"/>
+	<field name="BASECONCRETESTATUS" class="java.math.BigDecimal"/>
+	<field name="ANTICLIMBINGSTATUS" class="java.math.BigDecimal"/>
+	<field name="CONDUCTORSTATUS" class="java.math.BigDecimal"/>
+	<field name="EARTHCONDUCTORSTATUS" class="java.math.BigDecimal"/>
+	<field name="AREA_NAME" class="java.lang.String"/>
+	<variable name="No_of_cycles" class="java.lang.Integer" calculation="Count">
+		<variableExpression><![CDATA[$F{CYCLE}]]></variableExpression>
+	</variable>
+	<background>
+		<band/>
+	</background>
+	<title>
+		<band height="35">
+			<textField>
+				<reportElement x="0" y="0" width="991" height="17"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="13" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["History Analysis of Tower Line Status "]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="17" width="991" height="18"/>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["AREA  No: " +  $P{@area}.replaceAll( "'", "" ) + " / "+  $F{AREA_NAME}.trim()]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band/>
+	</pageHeader>
+	<columnHeader>
+		<band/>
+	</columnHeader>
+	<detail>
+		<band/>
+	</detail>
+	<columnFooter>
+		<band/>
+	</columnFooter>
+	<pageFooter>
+		<band/>
+	</pageFooter>
+	<summary>
+		<band height="1076">
+			<crosstab isRepeatColumnHeaders="false" isRepeatRowHeaders="false">
+				<reportElement x="0" y="0" width="991" height="242"/>
+				<rowGroup name="c6" width="60">
+					<bucket>
+						<bucketExpression class="java.lang.String"><![CDATA[$F{C6}]]></bucketExpression>
+					</bucket>
+					<crosstabRowHeader>
+						<cellContents backcolor="#FFFFFF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField>
+								<reportElement style="Crosstab Data Text" isPrintRepeatedValues="false" x="0" y="0" width="60" height="25"/>
+								<textElement textAlignment="Left">
+									<font fontName="Arial" size="9"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA[$V{c6}]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabRowHeader>
+					<crosstabTotalRowHeader>
+						<cellContents backcolor="#FFFFFF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<staticText>
+								<reportElement x="0" y="0" width="114" height="25" forecolor="#000000"/>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="Arial" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Total :]]></text>
+							</staticText>
+						</cellContents>
+					</crosstabTotalRowHeader>
+				</rowGroup>
+				<rowGroup name="line_name" width="153" totalPosition="End">
+					<bucket>
+						<bucketExpression class="java.lang.String"><![CDATA[$F{LINE_NAME}]]></bucketExpression>
+					</bucket>
+					<crosstabRowHeader>
+						<cellContents>
+							<textField>
+								<reportElement style="Crosstab Data Text" isPrintRepeatedValues="false" x="0" y="0" width="153" height="25"/>
+								<box>
+									<pen lineWidth="1.0"/>
+									<topPen lineWidth="1.0"/>
+									<leftPen lineWidth="1.0"/>
+									<bottomPen lineWidth="1.0"/>
+									<rightPen lineWidth="1.0"/>
+								</box>
+								<textElement textAlignment="Left"/>
+								<textFieldExpression class="java.lang.String"><![CDATA[$V{line_name}]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabRowHeader>
+					<crosstabTotalRowHeader>
+						<cellContents/>
+					</crosstabTotalRowHeader>
+				</rowGroup>
+				<columnGroup name="c8" height="34" totalPosition="End">
+					<bucket>
+						<bucketExpression class="java.lang.String"><![CDATA[$F{C8}]]></bucketExpression>
+					</bucket>
+					<crosstabColumnHeader>
+						<cellContents backcolor="#FFFFFF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="0" y="0" width="220" height="15"/>
+								<box>
+									<pen lineWidth="1.0"/>
+									<topPen lineWidth="1.0"/>
+									<leftPen lineWidth="1.0"/>
+									<bottomPen lineWidth="1.0"/>
+									<rightPen lineWidth="1.0"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["Cycle - " +$V{c8}]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="0" y="15" width="42" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" size="9" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["Wayleaves"]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="88" y="15" width="46" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" size="9" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["AntiClimbing"]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="42" y="15" width="46" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" size="9" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["BaseCon."]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="134" y="15" width="44" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" size="9" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["Conductor"]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="178" y="15" width="42" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" size="9" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["EarthCond."]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabColumnHeader>
+					<crosstabTotalColumnHeader>
+						<cellContents backcolor="#FFFFFF" mode="Opaque">
+							<box>
+								<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+							</box>
+							<staticText>
+								<reportElement x="0" y="0" width="266" height="15"/>
+								<box>
+									<pen lineWidth="1.0"/>
+									<topPen lineWidth="1.0"/>
+									<leftPen lineWidth="1.0"/>
+									<bottomPen lineWidth="1.0"/>
+									<rightPen lineWidth="1.0"/>
+								</box>
+								<textElement textAlignment="Center" verticalAlignment="Middle">
+									<font fontName="Arial" isBold="true"/>
+								</textElement>
+								<text><![CDATA[Average]]></text>
+							</staticText>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="51" y="15" width="54" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["BaseCon."]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="0" y="15" width="51" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["Wayleaves"]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="105" y="15" width="48" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["AntiClimbing"]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="153" y="15" width="57" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["Conductor"]]></textFieldExpression>
+							</textField>
+							<textField pattern="EEEEE dd MMMMM yyyy">
+								<reportElement style="Crosstab Data Text" x="210" y="15" width="56" height="19"/>
+								<box>
+									<pen lineWidth="0.5"/>
+									<topPen lineWidth="0.5"/>
+									<leftPen lineWidth="0.5"/>
+									<bottomPen lineWidth="0.5"/>
+									<rightPen lineWidth="0.5"/>
+								</box>
+								<textElement verticalAlignment="Middle">
+									<font fontName="Arial" isBold="false"/>
+								</textElement>
+								<textFieldExpression class="java.lang.String"><![CDATA["EarthCond."]]></textFieldExpression>
+							</textField>
+						</cellContents>
+					</crosstabTotalColumnHeader>
+				</columnGroup>
+				<measure name="commited_costMeasure" class="java.math.BigDecimal" calculation="Sum">
+					<measureExpression><![CDATA[$F{WAYLEAVESTATUS}]]></measureExpression>
+				</measure>
+				<measure name="measure1" class="java.math.BigDecimal" calculation="Sum">
+					<measureExpression><![CDATA[$F{BASECONCRETESTATUS}]]></measureExpression>
+				</measure>
+				<measure name="measure2" class="java.math.BigDecimal" calculation="Sum">
+					<measureExpression><![CDATA[$F{ANTICLIMBINGSTATUS}]]></measureExpression>
+				</measure>
+				<measure name="measure3" class="java.math.BigDecimal" calculation="Sum">
+					<measureExpression><![CDATA[$F{CONDUCTORSTATUS}]]></measureExpression>
+				</measure>
+				<measure name="measure4" class="java.lang.Integer" calculation="Count">
+					<measureExpression><![CDATA[$V{No_of_cycles}]]></measureExpression>
+				</measure>
+				<measure name="measure5" class="java.math.BigDecimal" calculation="Sum">
+					<measureExpression><![CDATA[$F{EARTHCONDUCTORSTATUS}]]></measureExpression>
+				</measure>
+				<crosstabCell width="220" height="25">
+					<cellContents>
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="42" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{commited_costMeasure}]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="88" y="0" width="46" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{measure2}]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="178" y="0" width="42" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{measure5}]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="42" y="0" width="46" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{measure1}]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="134" y="0" width="44" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{measure3}]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="72" height="25" rowTotalGroup="c6">
+					<cellContents backcolor="#FFFFFF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField pattern="#,##0.00;-#,##0.00">
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="72" height="25" forecolor="#000000"/>
+							<textElement textAlignment="Right" verticalAlignment="Middle">
+								<font fontName="Arial" size="9"/>
+							</textElement>
+							<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{commited_costMeasure}]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="266" height="25" columnTotalGroup="c8">
+					<cellContents backcolor="#FFFFFF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="51" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[($V{commited_costMeasure}.doubleValue())/($V{measure4}.doubleValue())]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="105" y="0" width="48" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[($V{measure2}.doubleValue())/($V{measure4}.doubleValue())]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="51" y="0" width="54" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[($V{measure1}.doubleValue())/($V{measure4}.doubleValue())]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="153" y="0" width="57" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[($V{measure3}.doubleValue())/($V{measure4}.doubleValue())]]></textFieldExpression>
+						</textField>
+						<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+							<reportElement style="Crosstab Data Text" x="210" y="0" width="56" height="25"/>
+							<box>
+								<pen lineWidth="0.5"/>
+								<topPen lineWidth="0.5"/>
+								<leftPen lineWidth="0.5"/>
+								<bottomPen lineWidth="0.5"/>
+								<rightPen lineWidth="0.5"/>
+							</box>
+							<textElement textAlignment="Right">
+								<font fontName="Arial"/>
+							</textElement>
+							<textFieldExpression class="java.lang.Double"><![CDATA[($V{measure5}.doubleValue())/($V{measure4}.doubleValue())]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="79" height="25" rowTotalGroup="c6" columnTotalGroup="c8">
+					<cellContents backcolor="#FFFFFF" mode="Opaque">
+						<box>
+							<pen lineWidth="0.5" lineStyle="Solid" lineColor="#000000"/>
+						</box>
+						<textField pattern="#,##0.00;-#,##0.00">
+							<reportElement style="Crosstab Data Text" x="0" y="0" width="79" height="25" forecolor="#000000" backcolor="#FFFFFF"/>
+							<textElement textAlignment="Right" verticalAlignment="Middle">
+								<font fontName="Arial" size="9"/>
+							</textElement>
+							<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{commited_costMeasure}]]></textFieldExpression>
+						</textField>
+					</cellContents>
+				</crosstabCell>
+				<crosstabCell width="220" height="0" rowTotalGroup="line_name">
+					<cellContents/>
+				</crosstabCell>
+				<crosstabCell width="266" height="0" rowTotalGroup="line_name" columnTotalGroup="c8">
+					<cellContents/>
+				</crosstabCell>
+			</crosstab>
+			<staticText>
+				<reportElement key="staticText" x="0" y="0" width="60" height="35" isPrintWhenDetailOverflows="true"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Line Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText" x="60" y="0" width="153" height="35" isPrintWhenDetailOverflows="true"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true"/>
+				</textElement>
+				<text><![CDATA[Line Name]]></text>
+			</staticText>
+			<lineChart>
+				<chart>
+					<reportElement x="19" y="361" width="319" height="259"/>
+					<chartTitle>
+						<titleExpression><![CDATA["Line Vs Way Leaves"]]></titleExpression>
+					</chartTitle>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[$F{LINE_NAME}]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{CYCLE_ORDER} + "  -  "+$F{CYCLE}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{WAYLEAVESTATUS}]]></valueExpression>
+						<labelExpression><![CDATA[" Line Vs Flash Overs "]]></labelExpression>
+					</categorySeries>
+				</categoryDataset>
+				<linePlot>
+					<plot/>
+					<categoryAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</valueAxisFormat>
+				</linePlot>
+			</lineChart>
+			<lineChart>
+				<chart>
+					<reportElement x="380" y="361" width="269" height="259"/>
+					<chartTitle>
+						<titleExpression><![CDATA["Line Vs Base Concrete"]]></titleExpression>
+					</chartTitle>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[$F{LINE_NAME}]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{CYCLE_ORDER} + "  -  "+$F{CYCLE}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{BASECONCRETESTATUS}]]></valueExpression>
+						<labelExpression><![CDATA[" Line Vs Funguss "]]></labelExpression>
+					</categorySeries>
+				</categoryDataset>
+				<linePlot>
+					<plot/>
+					<categoryAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</valueAxisFormat>
+				</linePlot>
+			</lineChart>
+			<lineChart>
+				<chart>
+					<reportElement x="668" y="361" width="256" height="259"/>
+					<chartTitle>
+						<titleExpression><![CDATA["Line Vs Base Anti Climbing"]]></titleExpression>
+					</chartTitle>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[$F{LINE_NAME}]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{CYCLE_ORDER} + "  -  "+$F{CYCLE}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{ANTICLIMBINGSTATUS}]]></valueExpression>
+						<labelExpression><![CDATA[" Line Vs Anti Climbing "]]></labelExpression>
+					</categorySeries>
+				</categoryDataset>
+				<linePlot>
+					<plot/>
+					<categoryAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</valueAxisFormat>
+				</linePlot>
+			</lineChart>
+			<lineChart>
+				<chart>
+					<reportElement x="60" y="769" width="320" height="259"/>
+					<chartTitle>
+						<titleExpression><![CDATA["Line Vs Conductors"]]></titleExpression>
+					</chartTitle>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[$F{LINE_NAME}]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{CYCLE_ORDER} + "  -  "+$F{CYCLE}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{CONDUCTORSTATUS}]]></valueExpression>
+						<labelExpression><![CDATA[" Line Vs Conductors  "]]></labelExpression>
+					</categorySeries>
+				</categoryDataset>
+				<linePlot>
+					<plot/>
+					<categoryAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</valueAxisFormat>
+				</linePlot>
+			</lineChart>
+			<lineChart>
+				<chart>
+					<reportElement x="501" y="769" width="311" height="259"/>
+					<chartTitle>
+						<titleExpression><![CDATA["Line Vs Earth Conductor"]]></titleExpression>
+					</chartTitle>
+					<chartSubtitle/>
+					<chartLegend/>
+				</chart>
+				<categoryDataset>
+					<categorySeries>
+						<seriesExpression><![CDATA[$F{LINE_NAME}]]></seriesExpression>
+						<categoryExpression><![CDATA[$F{CYCLE_ORDER} + "  -  "+$F{CYCLE}]]></categoryExpression>
+						<valueExpression><![CDATA[$F{EARTHCONDUCTORSTATUS}]]></valueExpression>
+						<labelExpression><![CDATA[" Line Vs W Missing  Parts  "]]></labelExpression>
+					</categorySeries>
+				</categoryDataset>
+				<linePlot>
+					<plot/>
+					<categoryAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</categoryAxisFormat>
+					<valueAxisFormat>
+						<axisFormat>
+							<labelFont/>
+							<tickLabelFont/>
+						</axisFormat>
+					</valueAxisFormat>
+				</linePlot>
+			</lineChart>
+		</band>
+	</summary>
+</jasperReport>

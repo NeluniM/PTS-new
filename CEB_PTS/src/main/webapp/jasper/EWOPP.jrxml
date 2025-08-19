@@ -1,0 +1,684 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="cc_trial_balance_dtl" pageWidth="842" pageHeight="595" orientation="Landscape" columnWidth="722" leftMargin="80" rightMargin="40" topMargin="30" bottomMargin="30">
+	<property name="ireport.scriptlethandling" value="0"/>
+	<property name="ireport.encoding" value="UTF-8"/>
+	<property name="ireport.zoom" value="1.0"/>
+	<property name="ireport.x" value="0"/>
+	<property name="ireport.y" value="0"/>
+	<import value="net.sf.jasperreports.engine.*"/>
+	<import value="java.util.*"/>
+	<import value="net.sf.jasperreports.engine.data.*"/>
+	<style name="CEB" fontName="Arial"/>
+	<parameter name="@province" class="java.lang.String"/>
+	<parameter name="@area" class="java.lang.String"/>
+	<parameter name="@fromDate" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="@toDate" class="java.lang.String" isForPrompting="false"/>
+	<parameter name="@line_id" class="java.lang.String"/>
+	<parameter name="@support_type" class="java.lang.String"/>
+	<parameter name="@cycle" class="java.lang.String"/>
+	<queryString>
+		<![CDATA[select distinct b.map_id,b.line_id,c.line_name, b.TOWER_CONFIGURATION,NOOFTAPPINGS,(select d.NAME from MMS_ADDTOWERCONFIGURATION d where  b.TOWER_CONFIGURATION= d.id) as TOWER_CONFIGURATION_N,  b.tower_no,b.area ,( select d.name from MMS_TOWERTYPE  d where d.id=b.tower_type ) as tower_type , (select d.line_type from MMS_ADDLINETYPE d where    d.id =  c.line_type  ) as line_type,a.NOFFLASHOVERSETS, a.FUNGUSSETNO, a.WPINSET,a.ENDFITTINGSET,
+a.JUMPERSTATUS,a.CONDUCTORSTATUS, a.EARTHCONDUCTORSTATUS,(Case when a.HOTPOSSIBLE=1 then 'Possible'   when a.HOTPOSSIBLE=0 then 'Impossible' else '' end) as Hotpossible ,(Select support_type from  MMS_ADDSUPPORTTYPE where id= b.support_type ) as support_type,
+  (select dept_nm from Gldeptm a where a.dept_id=b.area   ) as  area_name,
+(select b.comp_nm from Glcompm b where b.comp_Id in ( $P!{@province}) ) as province_name
+ from  MMS_TXNTOWERMAINTENANCE  a , MMS_ADDSUPPORT  b , MMS_ADDLINE c
+where    ( ( b.TOWER_CONFIGURATION in (3) and b.support_type in (1,6) ) or  (b.support_type =2 ))
+and b.area like   $P!{@area}||'%' and b.line_id  like $P!{@line_id}||'%'
+and   (( a.visitid    like $P!{@cycle}||'%' ) or (  a.visitid   = $P!{@cycle}    and  $P!{@cycle} in ('201901') ) or ( $P!{@cycle}  ='201801'    and   a.visitid not in  ('201901')))
+and b.support_type  like $P!{@support_type}||'%'
+and trim(b.area) in (select a.dept_id from Gldeptm a where a.comp_Id in (select b.comp_id from Glcompm b where b.parent_Id in( $P!{@province}) ) )
+and trim(a.towerid) = trim(b.id) and  trim(b.line_id)  = trim(c.id)
+and ( (a.NOFFLASHOVERSETS > 0)  or ( a.FUNGUSSETNO > 0) or ( a.WPINSET > 0)or ( a.ENDFITTINGSET > 0) )
+and ( a.JUMPERSTATUS !='Good' or a.JUMPERSTATUS !='None' or a.CONDUCTORSTATUS !='Good' or  a.EARTHCONDUCTORSTATUS  !='Good' or  a.EARTHCONDUCTORSTATUS  !='None' or  a.towerspecial !='None'  or a.LEG_PAINTING   !='None'
+ or a.NOOFMISSINGPARTS !=0 or a.WAYLEAVESTATUS !='Good' or a.BASECONCRETESTATUS !='Good' or a.ANTICLIMBINGSTATUS !='Good' )
+ and  b.status=1 and  c.status=1 and  a.status=1
+group by b.area , b.line_id,c.line_name,b.map_id, b.TOWER_CONFIGURATION,NOOFTAPPINGS, b.tower_no,a.towerspecial, b.tower_type, c.line_type,a.NOFFLASHOVERSETS, a.FUNGUSSETNO, a.WPINSET,a.ENDFITTINGSET,a.JUMPERSTATUS,a.CONDUCTORSTATUS, a.EARTHCONDUCTORSTATUS, a.HOTPOSSIBLE , b.support_type
+order by b.area , b.line_id ,b.map_id,  b.TOWER_CONFIGURATION ,  b.tower_no,NOOFTAPPINGS]]>
+	</queryString>
+	<field name="MAP_ID" class="java.math.BigDecimal"/>
+	<field name="LINE_ID" class="java.math.BigDecimal"/>
+	<field name="LINE_NAME" class="java.lang.String"/>
+	<field name="TOWER_CONFIGURATION" class="java.math.BigDecimal"/>
+	<field name="NOOFTAPPINGS" class="java.math.BigDecimal"/>
+	<field name="TOWER_CONFIGURATION_N" class="java.lang.String"/>
+	<field name="TOWER_NO" class="java.lang.String"/>
+	<field name="AREA" class="java.lang.String"/>
+	<field name="TOWER_TYPE" class="java.lang.String"/>
+	<field name="LINE_TYPE" class="java.lang.String"/>
+	<field name="NOFFLASHOVERSETS" class="java.math.BigDecimal"/>
+	<field name="FUNGUSSETNO" class="java.math.BigDecimal"/>
+	<field name="WPINSET" class="java.math.BigDecimal"/>
+	<field name="ENDFITTINGSET" class="java.math.BigDecimal"/>
+	<field name="JUMPERSTATUS" class="java.lang.String"/>
+	<field name="CONDUCTORSTATUS" class="java.lang.String"/>
+	<field name="EARTHCONDUCTORSTATUS" class="java.lang.String"/>
+	<field name="HOTPOSSIBLE" class="java.lang.String"/>
+	<field name="SUPPORT_TYPE" class="java.lang.String"/>
+	<field name="AREA_NAME" class="java.lang.String"/>
+	<field name="PROVINCE_NAME" class="java.lang.String"/>
+	<variable name="SubTot_FlashOver" class="java.math.BigDecimal" resetType="Group" resetGroup="Tower_conf" calculation="Sum">
+		<variableExpression><![CDATA[$F{NOFFLASHOVERSETS}]]></variableExpression>
+	</variable>
+	<variable name="SubTot_Funguss" class="java.math.BigDecimal" resetType="Group" resetGroup="Tower_conf" calculation="Sum">
+		<variableExpression><![CDATA[$F{FUNGUSSETNO}]]></variableExpression>
+	</variable>
+	<variable name="SubTot_WPIN" class="java.math.BigDecimal" resetType="Group" resetGroup="Tower_conf" calculation="Sum">
+		<variableExpression><![CDATA[$F{WPINSET}]]></variableExpression>
+	</variable>
+	<variable name="SubTot_EndFitting" class="java.math.BigDecimal" resetType="Group" resetGroup="Tower_conf" calculation="Sum">
+		<variableExpression><![CDATA[$F{ENDFITTINGSET}]]></variableExpression>
+	</variable>
+	<variable name="Area_Tot_FlashOver" class="java.math.BigDecimal" resetType="Group" resetGroup="Line" calculation="Sum">
+		<variableExpression><![CDATA[$F{NOFFLASHOVERSETS}]]></variableExpression>
+	</variable>
+	<variable name="Area_Tot_Funguss" class="java.math.BigDecimal" resetType="Group" resetGroup="Line" calculation="Sum">
+		<variableExpression><![CDATA[$F{FUNGUSSETNO}]]></variableExpression>
+	</variable>
+	<variable name="Area_Tot_WPIN" class="java.math.BigDecimal" resetType="Group" resetGroup="Line" calculation="Sum">
+		<variableExpression><![CDATA[$F{WPINSET}]]></variableExpression>
+	</variable>
+	<variable name="Area_Tot_EndFitting" class="java.math.BigDecimal" resetType="Group" resetGroup="Line" calculation="Sum">
+		<variableExpression><![CDATA[$F{ENDFITTINGSET}]]></variableExpression>
+	</variable>
+	<group name="Line" isStartNewPage="true">
+		<groupExpression><![CDATA[$F{AREA}]]></groupExpression>
+		<groupHeader>
+			<band height="21">
+				<textField>
+					<reportElement isPrintRepeatedValues="false" mode="Opaque" x="0" y="0" width="722" height="20" printWhenGroupChanges="Line" backcolor="#CCCCFF"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Left">
+						<font fontName="Arial" size="11" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA[$F{AREA_NAME}.trim()]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="26">
+				<textField isBlankWhenNull="true">
+					<reportElement x="0" y="0" width="302" height="26"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Right">
+						<font fontName="Arial" size="11" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Area Grand Total   "]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="303" y="0" width="47" height="26" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{Area_Tot_FlashOver}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="454" y="0" width="61" height="26" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{Area_Tot_EndFitting}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="409" y="0" width="45" height="26" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{Area_Tot_WPIN}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="351" y="0" width="58" height="26" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{Area_Tot_Funguss}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<group name="Tower_conf">
+		<groupExpression><![CDATA[$F{LINE_ID}]]></groupExpression>
+		<groupHeader>
+			<band height="26">
+				<textField isBlankWhenNull="true">
+					<reportElement isPrintRepeatedValues="false" mode="Opaque" x="0" y="0" width="722" height="26" backcolor="#CCCCCC"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Left">
+						<font fontName="Arial" size="10" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["   Line Name :" +$F{LINE_NAME}.trim() +"    Line Type :" +$F{LINE_TYPE}.trim()]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupHeader>
+		<groupFooter>
+			<band height="20">
+				<textField isBlankWhenNull="true">
+					<reportElement x="1" y="0" width="302" height="20"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Right">
+						<font fontName="Arial" size="11" isBold="true"/>
+					</textElement>
+					<textFieldExpression class="java.lang.String"><![CDATA["Sub Total   " +$F{LINE_NAME}.trim()]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="351" y="0" width="58" height="20" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{SubTot_Funguss}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="303" y="0" width="47" height="20" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{SubTot_FlashOver}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="409" y="0" width="45" height="20" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{SubTot_WPIN}]]></textFieldExpression>
+				</textField>
+				<textField pattern="#,##0.00;-#,##0.00" isBlankWhenNull="true">
+					<reportElement key="textField" mode="Opaque" x="454" y="0" width="61" height="20" backcolor="#FFFAF9"/>
+					<box>
+						<pen lineWidth="0.25"/>
+						<topPen lineWidth="0.25"/>
+						<leftPen lineWidth="0.25"/>
+						<bottomPen lineWidth="0.25"/>
+						<rightPen lineWidth="0.25"/>
+					</box>
+					<textElement textAlignment="Center">
+						<font fontName="Arial" size="11"/>
+					</textElement>
+					<textFieldExpression class="java.math.BigDecimal"><![CDATA[$V{SubTot_EndFitting}]]></textFieldExpression>
+				</textField>
+			</band>
+		</groupFooter>
+	</group>
+	<background>
+		<band splitType="Stretch"/>
+	</background>
+	<title>
+		<band height="59" splitType="Stretch">
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField-1" x="0" y="13" width="722" height="28"/>
+				<textElement textAlignment="Left">
+					<font fontName="Arial" size="14" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Electrical works on Poles /Lattice poles"]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement isPrintRepeatedValues="false" mode="Opaque" x="0" y="41" width="722" height="18" printWhenGroupChanges="Line" backcolor="#CCCCFF"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Left">
+					<font fontName="Arial" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Execution By Area Engineer/ Distribution Maintenance Branch -   "+ $F{PROVINCE_NAME}.trim()]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField-1" x="1" y="0" width="721" height="13"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial" size="11" isBold="false" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["MVMMS/Provincial Schedules/Cycle Num : "+($P{@cycle}.replaceAll( "'", "" ).equals( "" )?"All Cycles" :  $P{@cycle}.replaceAll( "'", "" )) + " /Electrical works on Poles /Lattice poles"]]></textFieldExpression>
+			</textField>
+		</band>
+	</title>
+	<pageHeader>
+		<band height="26" splitType="Stretch">
+			<staticText>
+				<reportElement key="staticText-5" x="27" y="0" width="84" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Tower  No]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="111" y="0" width="100" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Tower Type]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="303" y="0" width="48" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Flash  Over]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="352" y="0" width="57" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Funguss]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="409" y="0" width="45" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[WPIN]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="454" y="0" width="61" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[End Fitting]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="515" y="0" width="46" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Jumper]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="561" y="0" width="45" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Conductor]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="606" y="0" width="51" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Earth   Conductor]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-5" x="0" y="0" width="27" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Serial  No]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="211" y="0" width="92" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Tower  Configuration]]></text>
+			</staticText>
+			<staticText>
+				<reportElement key="staticText-6" x="657" y="0" width="65" height="26"/>
+				<box>
+					<pen lineWidth="0.5"/>
+					<topPen lineWidth="0.5"/>
+					<leftPen lineWidth="0.5"/>
+					<bottomPen lineWidth="0.5"/>
+					<rightPen lineWidth="0.5"/>
+				</box>
+				<textElement textAlignment="Left" verticalAlignment="Middle">
+					<font fontName="Arial" size="10" isBold="true" isUnderline="false" pdfFontName="Helvetica-Bold"/>
+				</textElement>
+				<text><![CDATA[Support type]]></text>
+			</staticText>
+		</band>
+	</pageHeader>
+	<columnHeader>
+		<band splitType="Stretch"/>
+	</columnHeader>
+	<detail>
+		<band height="22" splitType="Stretch">
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="27" y="0" width="84" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TOWER_NO}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="111" y="0" width="100" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TOWER_TYPE}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="303" y="0" width="48" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{NOFFLASHOVERSETS}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="351" y="0" width="58" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{FUNGUSSETNO}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="409" y="0" width="45" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{WPINSET}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="454" y="0" width="61" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Center">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.math.BigDecimal"><![CDATA[$F{ENDFITTINGSET}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="515" y="0" width="47" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Left">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{JUMPERSTATUS}.trim()]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="561" y="0" width="45" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Left">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{CONDUCTORSTATUS}.trim()]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="606" y="0" width="51" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Left">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{EARTHCONDUCTORSTATUS}.trim()]]></textFieldExpression>
+			</textField>
+			<textField>
+				<reportElement x="0" y="0" width="27" height="22"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement/>
+				<textFieldExpression class="java.lang.Integer"><![CDATA[$V{Line_COUNT}]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="211" y="0" width="91" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement>
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{TOWER_CONFIGURATION_N}.trim()]]></textFieldExpression>
+			</textField>
+			<textField pattern="" isBlankWhenNull="true">
+				<reportElement key="textField" mode="Opaque" x="657" y="0" width="65" height="22" backcolor="#FFFAF9"/>
+				<box>
+					<pen lineWidth="0.25"/>
+					<topPen lineWidth="0.25"/>
+					<leftPen lineWidth="0.25"/>
+					<bottomPen lineWidth="0.25"/>
+					<rightPen lineWidth="0.25"/>
+				</box>
+				<textElement textAlignment="Left">
+					<font fontName="Arial" size="10"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[$F{SUPPORT_TYPE}.trim()]]></textFieldExpression>
+			</textField>
+		</band>
+	</detail>
+	<columnFooter>
+		<band splitType="Stretch"/>
+	</columnFooter>
+	<pageFooter>
+		<band height="20" splitType="Stretch">
+			<textField>
+				<reportElement x="657" y="0" width="50" height="20"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA["Page "+$V{PAGE_NUMBER}+" of"]]></textFieldExpression>
+			</textField>
+			<textField evaluationTime="Report">
+				<reportElement x="707" y="0" width="15" height="20"/>
+				<textElement textAlignment="Right">
+					<font fontName="Arial"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[" " + $V{PAGE_NUMBER}]]></textFieldExpression>
+			</textField>
+			<textField isBlankWhenNull="false">
+				<reportElement key="textField" x="0" y="0" width="302" height="20"/>
+				<textElement>
+					<font fontName="Arial" size="11" isBold="true"/>
+				</textElement>
+				<textFieldExpression class="java.lang.String"><![CDATA[" Schedule Generated On :"+new SimpleDateFormat("yyyy-MMMM-dd").format(Calendar.getInstance().getTime()).toString()]]></textFieldExpression>
+			</textField>
+		</band>
+	</pageFooter>
+	<summary>
+		<band splitType="Stretch"/>
+	</summary>
+</jasperReport>

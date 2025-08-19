@@ -1,0 +1,89 @@
+<persistence version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+        http://java.sun.com/xml/ns/persistence
+        http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+	<persistence-unit name="persistenceUnitPTS"
+		transaction-type="JTA">
+		<!-- If you are running in a production environment, add a managed data 
+			source, this example data source is just for development and testing! -->
+		<!-- The datasource is deployed as WEB-INF/spring-quickstart-ds.xml, you 
+			can find it in the source at src/main/webapp/WEB-INF/spring-quickstart-ds.xml -->
+		<jta-data-source>java:jboss/datasources/OrcleDatasourcePTS</jta-data-source>
+		<class>com.it.ceb.pts.domain.Area</class>
+		<class>com.it.ceb.pts.domain.BillCycle</class>
+		<class>com.it.ceb.pts.domain.DistributionLicense</class>
+		<class>com.it.ceb.pts.domain.EnergySummary</class>
+		<class>com.it.ceb.pts.domain.Feeder</class>
+		<class>com.it.ceb.pts.domain.FileUpload</class>
+		<class>com.it.ceb.pts.domain.GridSubstation</class>
+		<class>com.it.ceb.pts.domain.Manufacturer</class>
+		<class>com.it.ceb.pts.domain.Measure</class>
+		<class>com.it.ceb.pts.domain.MeasureCell</class>
+		<class>com.it.ceb.pts.domain.MeasureCellId</class>
+		<class>com.it.ceb.pts.domain.Meter</class>
+		<class>com.it.ceb.pts.domain.MeterHeader</class>
+		<class>com.it.ceb.pts.domain.MeterModel</class>
+		<class>com.it.ceb.pts.domain.MeterPoint</class>
+		<class>com.it.ceb.pts.domain.MeterPointType</class>
+		<class>com.it.ceb.pts.domain.MeterReading</class>
+		<class>com.it.ceb.pts.domain.MeterReadingEnergySummary</class>
+		<class>com.it.ceb.pts.domain.MeterReadingErrLog</class>
+		<class>com.it.ceb.pts.domain.MeterReadingLog</class>
+		<class>com.it.ceb.pts.domain.PrimarySubstation</class>
+		<class>com.it.ceb.pts.domain.Province</class>
+		<class>com.it.ceb.pts.domain.Transformer</class>
+		<class>com.it.ceb.pts.domain.Sauserm</class>
+
+
+		 <!--
+		<properties>
+			 <property name="jboss.entity.manager.factory.jndi.name"
+				value="java:jboss/persistencePTS" />
+			 
+			<property name="hibernate.transaction.manager_lookup_class"
+				value="org.hibernate.transaction.JBossTransactionManagerLookup" />
+			<property name="hibernate.dialect" value="org.hibernate.dialect.Oracle10gDialect" />
+			<property name="hibernate.show_sql" value="false" />
+			<property name="hibernate.connection.pool_size" value="20" />
+			<property name="hibernate.connection.timeout" value="10" />
+			<property name="hibernate.connection.idle_test_period"
+				value="3000" />
+			<property name="hibernate.connection.maxIdle" value="20" />
+			<property name="hibernate.connection.maxWait" value="300" />
+			<property name="hibernate.cache.provider_class" value="org.hibernate.cache.NoCacheProvider" />
+			<property name="hibernate.connection.autocommit" value="false" />
+			
+
+
+		</properties>
+		  -->
+		<properties>
+		
+			<property name="jboss.entity.manager.factory.jndi.name"	value="java:jboss/persistencePTS" />
+			<!-- Properties for Hibernate -->
+			<property name="hibernate.transaction.manager_lookup_class"	value="org.hibernate.transaction.JBossTransactionManagerLookup" />
+			<property name="hibernate.dialect" value="org.hibernate.dialect.OracleDialect" />
+
+<!--			&lt;!&ndash; Hibernate Logging &ndash;&gt;-->
+<!--			<property name="hibernate.show_sql" value="true" />-->
+<!--			<property name="hibernate.format_sql" value="true" />-->
+
+			<property name="hibernate.connection.pool_size" value="220" />
+			<property name="hibernate.connection.timeout" value="10" />
+			<property name="hibernate.connection.idle_test_period" value="3000" />
+			<property name="hibernate.connection.maxIdle" value="20" />
+			<property name="hibernate.connection.maxWait" value="300" />
+			<property name="hibernate.cache.provider_class" value="org.hibernate.cache.NoCacheProvider" />
+			<!-- property name="hibernate.hbm2ddl.auto" value="update"/ -->
+			<property name="hibernate.connection.autocommit" value="false" />
+			
+			<!--<property name="hibernate.transaction.factory_class" value="org.hibernate.transaction.JTATransactionFactory"/> -->
+			<!--<property name="hibernate.transaction.manager_lookup_class" value="org.hibernate.transaction.JBossTransactionManagerLookup"/> -->
+
+
+
+		</properties>
+		
+	</persistence-unit>
+</persistence>

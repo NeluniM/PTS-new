@@ -1,0 +1,42 @@
+# Maven target directory
+/target/
+
+# IntelliJ IDEA project files
+/.idea/
+/*.iml
+
+# Logs
+*.log
+
+# Compiled class files
+*.class
+
+# Package files
+*.jar
+*.war
+*.ear
+
+# Generated files
+*.generated
+
+# Temporary files
+*.tmp
+*.temp
+
+# JavaScript dependencies
+/node_modules/
+/dist/
+
+# PHP dependencies
+/vendor/
+
+# SQL files
+*.sql
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE specific files
+.vscode/
+
