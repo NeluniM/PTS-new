@@ -175,6 +175,27 @@
 </div>
 
 <!-- JS here -->
+<script>
+    $('#loginForm').submit(function(e) {
+        e.preventDefault();
+        $.ajax({
+            url: 'http://localhost:9090/SharedService/api/auth/login', // Spring Boot backend URL
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                username: $('#userName').val(),
+                password: $('#password').val()
+            }),
+            xhrFields: { withCredentials: true }, // for session/cookie
+            success: function() {
+                window.location.href = 'home'; // redirect to home page
+            },
+            error: function() {
+                $('#epfError').show().text('Invalid username or password');
+            }
+        });
+    });
+</script>
 <script src="js/vendor/modernizr-3.5.0.min.js"></script>
 <script src="js/vendor/jquery-1.12.4.min.js"></script>
 <script src="js/popper.min.js"></script>
