@@ -178,20 +178,20 @@
 <script>
     $('#loginForm').submit(function(e) {
         e.preventDefault();
+        $('#epfError').hide(); // Hide error before request
         $.ajax({
-            url: 'http://localhost:9090/SharedService/api/auth/login', // Spring Boot backend URL
+            url: 'http://localhost:9090/SharedService/api/auth/user-details',
             type: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({
-                username: $('#userName').val(),
-                password: $('#password').val()
+                epfNo: $('#userName').val()
             }),
             xhrFields: { withCredentials: true }, // for session/cookie
             success: function() {
-                window.location.href = 'home'; // redirect to home page
+                window.location.href = 'home'; // redirect to home pag
             },
-            error: function() {
-                $('#epfError').show().text('Invalid username or password');
+            error: function(xhr) {
+                $('#epfError').show().text(xhr.responseText || 'User not found');
             }
         });
     });
