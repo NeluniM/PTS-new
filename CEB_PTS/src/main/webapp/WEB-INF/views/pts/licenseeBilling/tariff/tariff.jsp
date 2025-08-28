@@ -72,7 +72,7 @@
 
 
 <div class="page-container;" style="min-height: 850px;">
-<%--    <jsp:include page="src/main/webapp/WEB-INF/views/pts/licenseeBilling/tariffConfig.jsp/>--%>
+    <%--    <jsp:include page="src/main/webapp/WEB-INF/views/pts/licenseeBilling/tariffConfig.jsp/>--%>
     <jsp:include page="tariffConfig.jsp"/>
 </div>
 

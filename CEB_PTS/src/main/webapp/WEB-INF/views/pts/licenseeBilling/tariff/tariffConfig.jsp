@@ -9,8 +9,14 @@
         <div class="row">
             <div class="col vertical-layout">
                 <h5>Current Tariffs</h5>
-                <div id="tariffList">
+
+                <!-- Global start date banner (filled from server) -->
+                <div id="currentStartBanner" class="alert alert-light" style="border:1px dashed #ccc;">
+                    <strong>New Tariff Starts From :</strong>
+                    <span id="currentStartDateText">—</span>
                 </div>
+
+                <div id="tariffList"></div>
             </div>
         </div>
 
@@ -24,16 +30,10 @@
             </div>
         </div>
 
-
     </div>
-
 </div>
 
 <style>
-    /*.table-with-plus {*/
-    /*    position: relative;*/
-    /*}*/
-
     .table-with-plus thead tr:first-child th:first-child {
         width: 30px;
         padding: 5px !important;
@@ -41,68 +41,55 @@
         vertical-align: middle;
         border: none;
     }
-
-
-
-    /*.editing-mode {*/
-    /*    background-color: #fff3cd !important;*/
-    /*    border: 2px solid #ffc107;*/
-    /*}*/
-
-    /*.form-control {*/
-    /*    font-size: 14px;*/
-    /*    padding: 4px 8px;*/
-    /*}*/
-
-    /*.btn-sm {*/
-    /*    padding: 2px 8px;*/
-    /*    font-size: 12px;*/
-    /*    margin: 1px;*/
-    /*}*/
-
-    /*.badge {*/
-    /*    padding: 0.25em 0.6em;*/
-    /*    font-size: 0.75em;*/
-    /*    font-weight: 700;*/
-    /*    line-height: 1;*/
-    /*    text-align: center;*/
-    /*    white-space: nowrap;*/
-    /*    vertical-align: baseline;*/
-    /*    border-radius: 0.25rem;*/
-    /*}*/
-
-
 </style>
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
-    let isAddingNew = false;
-    let editingRowId = null;
-    let tariffCategories = [];
+    let calculatedValidFrom = null; // shared start date
+    let calculatedValidTill  = null; // still used internally but not shown
 
     $(document).ready(function () {
+        // Load the shared dates first so UI can show the banner and popup can use it
+        $.ajax({
+            url: '/PTS/getCalculatedTariffDates',
+            method: 'GET',
+            success: function (resp) {
+                calculatedValidFrom = resp.validFrom || '2025-07-01';
+                calculatedValidTill  = resp.validTill  || '2025-12-30';
+                $('#currentStartDateText').text(calculatedValidFrom);
 
-        // Automatically load tariff records when page loads
-        loadTariffRecords();
-        loadNonCurrentTariffs();
+                // If we just saved a new date, show it immediately
+                const pending = localStorage.getItem('lastTariffStart');
+                if (pending) { $('#currentStartDateText').text(pending); calculatedValidFrom = pending; }
+            },
+            error: function () {
+                calculatedValidFrom = '2025-07-01';
+                calculatedValidTill  = '2025-12-30';
+                $('#currentStartDateText').text(calculatedValidFrom);
+
+                // Same override on error path
+                const pending = localStorage.getItem('lastTariffStart');
+                if (pending) { $('#currentStartDateText').text(pending); calculatedValidFrom = pending; }
+            },
+            complete: function () {
+                loadTariffRecords();
+                loadNonCurrentTariffs();
+
+                // clear the override after the page has loaded
+                localStorage.removeItem('lastTariffStart');
+            }
+        });
     });
-
 
     function loadNonCurrentTariffs() {
         $.ajax({
             url: '/PTS/getNonCurrentTariffs',
             method: 'GET',
-            success: function (response) {
-                console.log('Non-current tariff records loaded:', response);
-                $('#nonCurrentTariffList').html(response);
-            },
+            success: function (response) { $('#nonCurrentTariffList').html(response); },
             error: function (xhr, status, error) {
-                console.error('Failed to fetch non-current tariff records:', status, error);
-                $('#nonCurrentTariffList').html(`
-                    <div style="text-align: center; color: red; padding: 20px;">
-                        Error loading non-current records: ${error}
-                    </div>
-                `);
+                $('#nonCurrentTariffList').html(
+                    `<div style="text-align:center;color:red;padding:20px;">Error loading non-current records: ${error}</div>`
+                );
             }
         });
     }
@@ -112,20 +99,27 @@
             url: '/PTS/getAllTariffs',
             method: 'GET',
             success: function (response) {
-                console.log('Tariff records loaded:', response);
                 $('#tariffList').html(response);
 
+                // ✅ NEW: Derive the banner date from the current rows we just loaded.
+                // This ensures the banner shows the real "validFrom" used by the current tariff rows,
+                // even if the /getCalculatedTariffDates endpoint returns some hard-coded or stale date.
+                const firstCurrentRow = $('#tariffList').find('tr.current-tariff').first();
+                const vf = firstCurrentRow.data('valid-from');
+                if (vf) {
+                    $('#currentStartDateText').text(vf);
+                    calculatedValidFrom = vf;
+                } else {
+                    // As an extra safety fallback, use the last saved date if present
+                    const pending = localStorage.getItem('lastTariffStart');
+                    if (pending) { $('#currentStartDateText').text(pending); calculatedValidFrom = pending; }
+                }
             },
             error: function (xhr, status, error) {
-                console.error('Failed to fetch tariff records:', status, error);
-                alert('Failed to fetch tariff records. Please try again.');
-                $('#tariffList').html(`
-                    <div style="text-align: center; color: red; padding: 20px;">
-                        Error loading records: ${error}
-                    </div>
-                `);
+                $('#tariffList').html(
+                    `<div style="text-align:center;color:red;padding:20px;">Error loading records: ${error}</div>`
+                );
             }
         });
     }
-
 </script>
