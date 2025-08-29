@@ -170,11 +170,11 @@
             let tableHTML = `
               ${bannerHTML}
               <!-- Date Row Above Table -->
-<div style="margin-bottom: 10px; font-weight: bold;">
-  New Tariff Starts From:
-  <input type="date" id="tariffStartDate" class="form-control"
-         value="<?php echo date('Y-m-d'); ?>" />
-</div>
+            <div style="margin-bottom: 10px; font-weight: bold;">
+            New Tariff Starts From:
+                <input type="date" id="tariffStartDate" class="form-control"
+             value="<?php echo date('Y-m-d'); ?>" />
+            </div>
 
 <table class="popup-table">
   <thead>
@@ -245,9 +245,14 @@
                     const sharedStart = (startInput && startInput.value) ? startInput.value.trim() : startDefault;
 
                     const tariffTypeMap = {
-                        0:'ENERGY TARIFF',1:'ENERGY TARIFF',2:'ENERGY TARIFF',
+                        0:'ENERGY TARIFF',
+                        1:'ENERGY TARIFF',
+                        2:'ENERGY TARIFF',
                         3:'CAPACITY TARIFF',
-                        4:'ADJUSTMENT FACTOR',5:'ADJUSTMENT FACTOR',6:'ADJUSTMENT FACTOR',7:'ADJUSTMENT FACTOR'
+                        4:'ADJUSTMENT FACTOR',
+                        5:'ADJUSTMENT FACTOR',
+                        6:'ADJUSTMENT FACTOR',
+                        7:'ADJUSTMENT FACTOR'
                     };
 
                     if (!sharedStart) {

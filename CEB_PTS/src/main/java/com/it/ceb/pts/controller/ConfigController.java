@@ -549,7 +549,7 @@ public class ConfigController {
                 tariff.setTariffCategoryCode(tariffCategory);
                 tariff.setRate(tariffModel.getRate());
                 tariff.setValidFrom(tariffModel.getValidFrom());
-                tariff.setValidTill(null);
+                tariff.setValidTill(tariffModel.getValidTill());
                 tariff.setIsCurrent(1L); // Set new tariffs as current
                 tariff.setUpdatedUser(tariffModel.getUpdatedUser() != null ? tariffModel.getUpdatedUser() : "SYSTEM");
                 tariff.setUpdatedTime(LocalDate.now());
