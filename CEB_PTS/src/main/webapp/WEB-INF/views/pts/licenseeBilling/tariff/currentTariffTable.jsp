@@ -11,7 +11,6 @@
 <style>
     .popup-table { width: 100%; font-size: 0.9rem; margin-bottom: 10px; }
     .popup-table th, .popup-table td { padding: 4px; border: 1px solid #dddddd; color: #000000; }
-    /* Set specific width for rate column */
     .popup-table th:nth-child(3), .popup-table td:nth-child(3) { width: 80px; min-width: 80px; max-width: 80px; }
     .popup-table th { background-color: #FFD900; color: #000000; padding: 8px; border: 1px solid #f6f6f6; font-weight: normal; font-size: 16px; }
     .popup-table td[contenteditable="true"] { background-color: #f9f9f9; cursor: text; }
@@ -172,8 +171,7 @@
               <!-- Date Row Above Table -->
             <div style="margin-bottom: 10px; font-weight: bold;">
             New Tariff Starts From:
-                <input type="date" id="tariffStartDate" class="form-control"
-             value="<?php echo date('Y-m-d'); ?>" />
+                <input type="date" id="tariffStartDate" class="form-control" />
             </div>
 
 <table class="popup-table">
@@ -232,37 +230,61 @@
                 allowOutsideClick: false,
                 confirmButtonText: 'Save',
                 cancelButtonText: 'Cancel',
+
+                /* ✅ keep the two date inputs in sync */
                 didOpen: () => {
-                    const input = document.getElementById('newStartDateInput');
-                    if (input) {
-                        flatpickr(input, { dateFormat: "Y-m-d", defaultDate: startDefault, allowInput: true });
+                    const fpEl = document.getElementById('newStartDateInput');   // flatpickr text
+                    const nativeEl = document.getElementById('tariffStartDate'); // native date
+                    const initial = (window.calculatedValidFrom || startDefault);
+
+                    // init native input
+                    if (nativeEl) nativeEl.value = initial;
+
+                    // init flatpickr
+                    let fp = null;
+                    if (fpEl) {
+                        fp = flatpickr(fpEl, {
+                            dateFormat: "Y-m-d",
+                            defaultDate: initial,
+                            allowInput: true,
+                            onChange: function(selectedDates, dateStr) {
+                                if (nativeEl) nativeEl.value = dateStr || '';
+                            }
+                        });
+                    }
+
+                    // two-way sync: native -> flatpickr
+                    if (nativeEl) {
+                        nativeEl.addEventListener('change', function() {
+                            const val = this.value || '';
+                            if (fp) fp.setDate(val, false);
+                            if (fpEl) fpEl.value = val;
+                        });
                     }
                 },
+
                 preConfirm: () => {
                     const rows = document.querySelectorAll('.popup-table tbody tr');
                     const tariffs = [];
-                    const startInput = document.getElementById('newStartDateInput');
-                    const sharedStart = (startInput && startInput.value) ? startInput.value.trim() : startDefault;
+
+                    // take the value from either input (whichever the user changed)
+                    const startFromFP     = (document.getElementById('newStartDateInput')?.value || '').trim();
+                    const startFromNative = (document.getElementById('tariffStartDate')?.value || '').trim();
+                    const sharedStart = startFromNative || startFromFP || (window.calculatedValidFrom || '2025-07-01');
 
                     const tariffTypeMap = {
-                        0:'ENERGY TARIFF',
-                        1:'ENERGY TARIFF',
-                        2:'ENERGY TARIFF',
+                        0:'ENERGY TARIFF',1:'ENERGY TARIFF',2:'ENERGY TARIFF',
                         3:'CAPACITY TARIFF',
-                        4:'ADJUSTMENT FACTOR',
-                        5:'ADJUSTMENT FACTOR',
-                        6:'ADJUSTMENT FACTOR',
-                        7:'ADJUSTMENT FACTOR'
+                        4:'ADJUSTMENT FACTOR',5:'ADJUSTMENT FACTOR',6:'ADJUSTMENT FACTOR',7:'ADJUSTMENT FACTOR'
                     };
 
                     if (!sharedStart) {
-                        Swal.showValidationMessage(`Please select the "New Tariff Starts From" date.`);
+                        Swal.showValidationMessage('Please select the "New Tariff Starts From" date.');
                         return false;
                     }
 
                     for (let i = 0; i < rows.length; i++) {
                         const row = rows[i];
-                        // robust for rowspan
                         const cells = row.querySelectorAll('td');
                         const tariffNameCell = cells[cells.length - 2];
                         const rateInputEl = row.querySelector('input.rate-input');
@@ -279,15 +301,15 @@
 
                         tariffs.push({
                             tarrifType: tariffType,
-                            validFrom: sharedStart,                                  // single header date
-                            validTill: (window.calculatedValidTill || tillDefault),  // not shown, still sent
+                            validFrom: sharedStart,
+                            validTill: (window.calculatedValidTill || '2025-12-30'),
                             tariffName: tariffName,
                             rate: rateStr,
                             isCurrent: 1
                         });
                     }
 
-                    // === NEW (persist chosen date for UI + after reload) ===
+                    // keep chosen date so banner shows it immediately after reload
                     window._lastPopupStartDate = sharedStart;
                     localStorage.setItem('lastTariffStart', sharedStart);
 
@@ -303,10 +325,9 @@
                         contentType: 'application/json',
                         data: JSON.stringify(result.value),
 
-                        // NOTE: you keep your original success/error order (inverted). We only add banner updates.
+                        // ⚠️ per your request, do NOT swap these
                         error: function(response) {
-                            // === NEW: immediately reflect the chosen date in the banner ===
-                            const savedStart = window._lastPopupStartDate || startDefault;
+                            const savedStart = window._lastPopupStartDate || (window.calculatedValidFrom || '2025-07-01');
                             $('#currentStartDateText').text(savedStart);
 
                             Swal.fire({
@@ -317,8 +338,7 @@
                             }).then(() => { window.location.reload(); });
                         },
                         success: function(xhr, status, error) {
-                            // === NEW: also update here to be safe ===
-                            const savedStart = window._lastPopupStartDate || startDefault;
+                            const savedStart = window._lastPopupStartDate || (window.calculatedValidFrom || '2025-07-01');
                             $('#currentStartDateText').text(savedStart);
 
                             let errorMessage = 'Error adding tariffs';
