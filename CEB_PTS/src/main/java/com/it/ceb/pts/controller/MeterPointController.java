@@ -25,7 +25,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ViewResolver;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
+import java.io.File;
+import java.io.FileInputStream;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -250,6 +259,101 @@ public class MeterPointController {
         return conn;
     }
 
+//    @Transactional
+//    @RequestMapping(value = "/processFiles", method = RequestMethod.GET)
+//    public String readFiles(
+//            @RequestParam("billCycle") String billCycle,
+//            @RequestParam("division") String division,
+//            @RequestParam("province") String province,
+//            Model model) {
+//
+//        String fileName = "D:\\New folder (2)\\440\\LECO\\WPNL\\ANK\\ANK_F01\\211279951-LP 01.xls";
+//
+//        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+//            String line;
+//            int rowIndex = 0; // Track the current row index
+//            int targetRow = 8; // Row index to read (0-based for A9)
+//            int targetColumn = 3; // Column index to read (0-based for A)
+//
+//            while ((line = br.readLine()) != null) {
+//                if (rowIndex == targetRow) {
+//                    String[] columns = line.split("\\t"); // Split by tab
+//                    if (targetColumn < columns.length) {
+//                        String cellValue = columns[targetColumn];
+//                        System.out.println("Value at A9: " + cellValue);
+//                    } else {
+//                        System.out.println("Column index out of bounds for row " + (targetRow + 1));
+//                    }
+//                    break; // Exit after reading the target row
+//                }
+//                rowIndex++;
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return "pts/licenseeBilling/processReading/processTable";
+//    }
+
+//          date 2025-08-26
+//    @Transactional
+//    @RequestMapping(value = "/processFiles", method = RequestMethod.GET)
+//    public String readFiles(
+//            @RequestParam("billCycle") String billCycle,
+//            @RequestParam("division") String division,
+//            @RequestParam("province") String province,
+//            Model model) {
+//
+//        String fileName = "D:\\New folder (2)\\440\\LECO\\WPNL\\ANK\\ANK_F01\\211279951-LP 01.xls";
+//
+//        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+//            String line;
+//            int rowIndex = 2; // Track the current row index
+//            int targetRow = 2; // Row index to read (0-based)
+//            int targetColumn = 1; // Column index to read (0-based)
+//
+//            while ((line = br.readLine()) != null) {
+//                String[] columns = line.split("\\t"); // Split by tab
+//
+//                // Print all columns for debugging
+//                for (String col : columns) {
+//                    System.out.print(col + "\t");
+//                    System.out.print(" | ");
+//                }
+//                System.out.println();
+//
+////                // Check if the current row is the target row
+////                if (rowIndex == targetRow) {
+////                    System.out.println("+++++++++++++++++++++++++++++++++");
+////                    if (targetColumn < columns.length) {
+////                        String cellValue = columns[targetColumn];
+////                        System.out.println("Value at row " + (targetRow + 1) + ", column " + (targetColumn + 1) + ": " + cellValue);
+////
+////                        // Check for matches
+////                        if (cellValue.matches("[A-Z]\\d+")) {
+////                            System.out.println("Matched pattern [A-Z]\\d+: " + cellValue);
+////                        } else if (cellValue.matches("[A-Z]+")) {
+////                            System.out.println("Matched pattern [A-Z]+: " + cellValue);
+////                        } else {
+////                            System.out.println("No match for the cell value: " + cellValue);
+////                        }
+////                    } else {
+////                        System.out.println("Column index out of bounds for row " + (targetRow + 1));
+////                    }
+////                }
+//
+//
+//
+//                rowIndex++;
+//            }
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//
+//        return "pts/licenseeBilling/processReading/processTable";
+//    }
+
+
 
     //process all files for a bill cycle=========================================
     @Transactional
@@ -259,8 +363,12 @@ public class MeterPointController {
             @RequestParam("division") String division,
             @RequestParam("province") String province,
             Model model) {
-        String basePath = ConfigProperties.getProperty("FILE_PATH");
-        String fullPath = basePath + billCycle + "\\"+division + "\\" + province+ "\\";
+//        String basePath = ConfigProperties.getProperty("FILE_PATH");
+//        String fullPath = basePath + billCycle + "\\"+division + "\\" + province+ "\\";
+
+        String basePath = "D:\\New folder (2)";
+        String fullPath = basePath + "\\" + billCycle + "\\" + division + "\\" + province + "\\";
+
         System.out.println("Full path for processing files: " + fullPath);
         try {
 
@@ -394,6 +502,147 @@ public class MeterPointController {
         }
     }
 
+
+//    @Transactional
+//    @RequestMapping(value = "/processFiles", method = RequestMethod.GET)
+//    public String readFiles(
+//            @RequestParam("billCycle") String billCycle,
+//            @RequestParam("division") String division,
+//            @RequestParam("province") String province,
+//            Model model) {
+//
+//        // Base folder path
+//        String basePath = "D:\\New folder (2)";
+//        String folderPath = basePath + "\\" + billCycle + "\\" + division + "\\" + province + "\\";
+//        System.out.println("Full path for processing files: " + folderPath);
+//
+//        try {
+//            System.out.println("new line in the try block");
+//            File folder = new File(folderPath);
+//            System.out.println("new line in the try block");
+//            if (!folder.exists() || !folder.isDirectory()) {
+//                System.out.println("new line in the try block");
+//                throw new IOException("Folder not found: " + folderPath);
+//            }
+//            System.out.println("comes to the Process Folder method");
+//            // process all files recursively
+//            processFolder(folder);
+//            System.out.println("end to the Process Folder method");
+//
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            model.addAttribute("msg", ExceptionHandler.handleException(e));
+//            return "pts/licenseeBilling/processReading/processTable";
+//        }
+//
+//        return "pts/licenseeBilling/processReading/processTable";
+//    }
+//
+//    // ✅ Recursively process folders
+//    private void processFolder(File folder) throws Exception {
+//        System.out.println("in the Process Folder method");
+//        File[] files = folder.listFiles();
+//        if (files == null) return;
+//
+//        for (File file : files) {
+//            if (file.isDirectory()) {
+//                processFolder(file); // recursive call
+//            } else if (file.getName().toLowerCase().endsWith(".tsv")|| file.getName().toLowerCase().endsWith(".txt")||
+//                    file.getName().toLowerCase().endsWith(".xls") || file.getName().toLowerCase().endsWith(".xlsx")) {
+//                readTextFile(file);
+//            }
+//        }
+//    }
+//
+//    // ✅ Read tab-delimited file
+//    private void readTextFile(File file) throws Exception {
+//        System.out.println("Reading file: " + file.getAbsolutePath());
+//
+//        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+//            String line;
+//            while ((line = br.readLine()) != null) {
+//                // Split by tab (and remove extra spaces)
+//                String[] columns = line.trim().split("\\t+");
+//
+//                for (String col : columns) {
+//                    System.out.print(col + "\t");
+//                }
+//                System.out.println();
+//            }
+//        }
+//    }
+
+//    @Transactional
+//    @RequestMapping(value = "/processFiles", method = RequestMethod.GET)
+//    public String readFiles(
+//            @RequestParam("billCycle") String billCycle,
+//            @RequestParam("division") String division,
+//            @RequestParam("province") String province,
+//            Model model) {
+//
+//        // Base folder path
+//        //String basePath = "D:\\New folder (2)\\";
+//        String basePath = "D:\\GIT\\PTS_NEW\\ReadingFiles\\ProcessFiles\\";
+//        String folderPath = basePath + billCycle + "\\" + division + "\\" + province + "\\";
+//        System.out.println("Full path for processing files: " + folderPath);
+//
+//        try {
+//            System.out.println("new line in the try block");
+//            File folder = new File(folderPath);
+//            System.out.println("new line in the try block");
+//            if (!folder.exists() || !folder.isDirectory()) {
+//                System.out.println("new line in the try block");
+//                throw new IOException("Folder not found: " + folderPath);
+//            }
+//            System.out.println("comes to the Process Folder method");
+//            // process all files recursively
+//            processFolder(folder);
+//            System.out.println("end to the Process Folder method");
+//
+//
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            model.addAttribute("msg", ExceptionHandler.handleException(e));
+//            return "pts/licenseeBilling/processReading/processTable";
+//        }
+//
+//        return "pts/licenseeBilling/processReading/processTable";
+//    }
+//
+//    // ✅ Recursively process folders
+//    private void processFolder(File folder) throws Exception {
+//        System.out.println("in the Process Folder method");
+//        File[] files = folder.listFiles();
+//        if (files == null) return;
+//
+//        for (File file : files) {
+//            if (file.isDirectory()) {
+//                processFolder(file); // recursive call
+//            } else if (file.getName().toLowerCase().endsWith(".tsv")|| file.getName().toLowerCase().endsWith(".txt")||
+//                    file.getName().toLowerCase().endsWith(".xls") || file.getName().toLowerCase().endsWith(".xlsx")) {
+//                readTextFile(file);
+//            }
+//        }
+//    }
+//
+//    // ✅ Read tab-delimited file
+//    private void readTextFile(File file) throws Exception {
+//        System.out.println("Reading file: " + file.getAbsolutePath());
+//
+//        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+//            String line;
+//            while ((line = br.readLine()) != null) {
+//                // Split by tab (and remove extra spaces)
+//                String[] columns = line.trim().split("\\t+");
+//
+//                for (String col : columns) {
+//                    System.out.print(col + "\t");
+//                }
+//                System.out.println();
+//            }
+//        }
+//    }
 
     @Transactional
     @RequestMapping(value = "/viewInvoice", method = RequestMethod.GET)

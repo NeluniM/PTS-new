@@ -144,7 +144,7 @@
     </c:forEach>
 
     <!-- Second pass: render table with merged cells for current tariffs only -->
-    <c:set var="currentTariffType" value="" />
+    <c: set var="currentTariffType" value="" />
     <c:set var="isFirstOfType" value="true" />
 
     <c:forEach var="tariff" items="${tariffList}" varStatus="status">

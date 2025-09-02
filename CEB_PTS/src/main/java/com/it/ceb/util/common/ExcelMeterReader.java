@@ -275,7 +275,6 @@ public class ExcelMeterReader {
 
     }
 
-
     //==========================================================================
     //          Reading type handling
     //==========================================================================
@@ -286,41 +285,108 @@ public class ExcelMeterReader {
         Map<Long, BigDecimal> readings = new HashMap<>();
         String extension = FilenameUtils.getExtension(file.getName()).toLowerCase();
 
-        try (FileInputStream fis = new FileInputStream(file)) {
-            Workbook workbook;
+//        try (FileInputStream fis = new FileInputStream(file)) {
+//            Workbook workbook;
+//
+//            try {
+//                if ("xlsx".equals(extension)) {
+//                    workbook = new XSSFWorkbook(fis);
+//                } else{
+//                    workbook = new HSSFWorkbook(fis);
+//                }
+//            } catch (IOException e) {
+//                //e.printStackTrace();//
+//                throw new CorruptedFileException("Couldn't open (EP)");
+//            }
+//
+//
+//            Sheet sheet = workbook.getSheetAt(0); // Assuming first sheet
+//
+//            for (MeasureCell cell : cellAddresses) {
+//                BigDecimal val;
+//                if (cell.getCell().matches("[A-Z]\\d+")) {
+//                    val = CurrentReadingCalc(readSpecificCell(sheet, cell.getCell()) , cell.getValueCalc());
+//                } else if (cell.getCell().matches("[A-Z]")) {
+//                    val = CurrentReadingCalc(readLastCellInColumn(sheet, cell.getCell()), cell.getValueCalc());
+//                } else {
+//                    throw new ConfigException("Invalid cell address format");
+//                }
+//
+//                readings.put(cell.getMeasureId(), val);
+//            }
+//            return readings;
+//
+//        } catch (Exception e) {
+//            //e.printStackTrace();//
+//            throw e;
+//        }
 
-            try {
-                if ("xlsx".equals(extension)) {
-                    workbook = new XSSFWorkbook(fis);
-                } else{
-                    workbook = new HSSFWorkbook(fis);
-                }
-            } catch (IOException e) {
-                //e.printStackTrace();//
-                throw new CorruptedFileException("Couldn't open (EP)");
-            }
 
 
-            Sheet sheet = workbook.getSheetAt(0); // Assuming first sheet
+//
+//        System.out.println("+++++++++++++++Reading as text file for testing...+++++++++++++++");
+//         workable on the in the 2025-08-28
+//        String fileName = "D:\\New folder (2)\\440\\LECO\\WPNL\\ANK\\ANK_F01\\211279951-LP 01.xls";
+//
+//        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+//            String line;
+//            int rowIndex = 0; // Track the current row index
+//            int targetRow = 18; // Row index to read (0-based for A9)
+//            int targetColumn = 2; // Column index to read (0-based for A)
+//
+//            while ((line = br.readLine()) != null) {
+//                if (rowIndex == targetRow) {
+//                    String[] columns = line.split("\\t"); // Split by tab
+//                    if (targetColumn < columns.length) {
+//                        String cellValue = columns[targetColumn];
+//                        System.out.println("Value at A9: " + cellValue);
+//                    } else {
+//                        System.out.println("Column index out of bounds for row " + (targetRow + 1));
+//                    }
+//                    break; // Exit after reading the target row
+//                }
+//                rowIndex++;
+//            }
+//            return readings;
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+//        return null;
 
-            for (MeasureCell cell : cellAddresses) {
-                BigDecimal val;
-                if (cell.getCell().matches("[A-Z]\\d+")) {
-                    val = CurrentReadingCalc(readSpecificCell(sheet, cell.getCell()) , cell.getValueCalc());
-                } else if (cell.getCell().matches("[A-Z]")) {
-                    val = CurrentReadingCalc(readLastCellInColumn(sheet, cell.getCell()), cell.getValueCalc());
-                } else {
-                    throw new ConfigException("Invalid cell address format");
-                }
 
-                readings.put(cell.getMeasureId(), val);
-            }
-            return readings;
 
-        } catch (Exception e) {
-            //e.printStackTrace();//
-            throw e;
+
+        String fileName = "D:\\New folder (2)\\440\\LECO\\WPNL\\ANK\\ANK_F01\\211279951-LP 01.xls";
+
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String line;
+//            int rowIndex = 0; // Track the current row index
+//            int targetRow = 18; // Row index to read (0-based for A9)
+//            int targetColumn = 2; // Column index to read (0-based for A)
+//
+//            while ((line = br.readLine()) != null) {
+//                if (rowIndex == targetRow) {
+//                    String[] columns = line.split("\\t"); // Split by tab
+//                    if (targetColumn < columns.length) {
+//                        String cellValue = columns[targetColumn];
+//                        System.out.println("Value at A9: " + cellValue);
+//                    } else {
+//                        System.out.println("Column index out of bounds for row " + (targetRow + 1));
+//                    }
+//                    break; // Exit after reading the target row
+//                }
+//                rowIndex++;
+//            }
+//            return readings;
+
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+        return null;
+
+
     }
 
     //Calculation of current reading------------------------
