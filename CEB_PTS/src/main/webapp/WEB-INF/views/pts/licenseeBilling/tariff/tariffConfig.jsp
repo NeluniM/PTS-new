@@ -101,9 +101,7 @@
             success: function (response) {
                 $('#tariffList').html(response);
 
-                // ✅ NEW: Derive the banner date from the current rows we just loaded.
-                // This ensures the banner shows the real "validFrom" used by the current tariff rows,
-                // even if the /getCalculatedTariffDates endpoint returns some hard-coded or stale date.
+
                 const firstCurrentRow = $('#tariffList').find('tr.current-tariff').first();
                 const vf = firstCurrentRow.data('valid-from');
                 if (vf) {

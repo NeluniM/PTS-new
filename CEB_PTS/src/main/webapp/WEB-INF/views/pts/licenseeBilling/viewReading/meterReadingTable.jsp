@@ -1,6 +1,7 @@
 <%@ taglib uri="http://www.springframework.org/tags/form" prefix="form" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <div>
     <c:choose>
         <c:when test="${not empty msg}">
@@ -18,6 +19,7 @@
                     <th>Serial Number</th>
                     <th>Status</th>
                     <th>Time of use</th>
+                    <th>Flow</th>
                     <th>Reading on ${currentDate}</th>
                     <th>Reading on ${previousDate}</th>
                     <th>Energy in three intervals ${billMonth} ${billYear} (kWh)</th>
@@ -39,7 +41,27 @@
                                         <td rowspan="6">${meterReadingFile.status}<br><div class="errorReason">${meterReadingFile.errorReason}</div></td>
                                         <c:set var="rowIndex" value="${rowIndex + 1}" />
                                     </c:if>
-                                    <td class="type">${processRecord.measure}</td>
+
+                                        <%-- Split "Day Export" -> timeOfUse="Day", flow="Export" (and similar) --%>
+                                    <c:set var="timeOfUse" value="${fn:trim(fn:replace(fn:replace(processRecord.measure,' Import',''),' Export',''))}" />
+                                    <c:set var="flow" value="${fn:contains(processRecord.measure,'Import') ? 'Import' : 'Export'}" />
+
+                                    <td class="type">${timeOfUse}</td>
+
+                                        <%-- Show Flow once per 3-row block using rowspan --%>
+                                    <c:choose>
+                                        <c:when test="${status.index < 3}">
+                                            <c:if test="${status.index == 0}">
+                                                <td class="type" rowspan="3">Export</td>
+                                            </c:if>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <c:if test="${status.index == 3}">
+                                                <td class="type" rowspan="3">Import</td>
+                                            </c:if>
+                                        </c:otherwise>
+                                    </c:choose>
+
                                     <td class="numeric">
                                         <fmt:formatNumber value="${processRecord.currentReading}" type="number" groupingUsed="true"/>
                                     </td>
@@ -56,6 +78,7 @@
                                             </c:otherwise>
                                         </c:choose>
                                     </td>
+
                                     <c:choose>
                                         <c:when test="${status.index < 3}">
                                             <c:if test="${status.index == 0}">
@@ -86,6 +109,7 @@
                                             </c:if>
                                         </c:otherwise>
                                     </c:choose>
+
                                     <c:choose>
                                         <c:when test="${status.index < 3}">
                                             <c:if test="${status.index == 0}">
@@ -126,7 +150,8 @@
                                 <td>${meterReadingFile.pss}</td>
                                 <td><a class="serialNoLink" href="meterSearch?billCycle=${billCycle}&serialNo=${meterReadingFile.serialNo}">${meterReadingFile.serialNo}</a></td>
                                 <td>${meterReadingFile.status}<br><div class="errorReason">${meterReadingFile.errorReason}</div></td>
-                                <td></td>
+                                <td></td>   <%-- Time of use --%>
+                                <td></td>   <%-- Flow --%>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -322,27 +347,6 @@
             printEnergyBill();
         });
 
-        /*function printInvoice() {
-
-           // alert('printInvoice')
-            button.val('Printing...').prop('disabled', true);
-
-            $.ajax({
-                url: '/PTS/printInv',
-                method: 'GET',
-                data: {
-                    division: div,
-                    billCycle: bc
-                },
-                success: function(response) {
-                    button.val('Print').prop('disabled', false);
-                },
-                error: function(xhr, status, error) {
-                    button.val('Print').prop('disabled', false);
-                }
-            });
-        }*/
-
         function printEnergyBill() {
             button.val('Printing...').prop('disabled', true);
             console.log("Printing view reading for division: " + div + ", bill cycle: " + bc);
@@ -375,9 +379,5 @@
                 }
             });
         }
-
-
-
     });
-
 </script>

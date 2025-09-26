@@ -123,7 +123,7 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
                 throw new ConfigException("Province config is not set");
             }
             if(query.getSingleResult().getIsUploadLocked().equals(0L)){
-                throw new ConfigException("File upload is unlocked (for the province)");
+                throw new ConfigException("Please lock the file upload for the province");
             }
             if(query.getSingleResult().getIsReadingProcessLocked().equals(1L)){
                 throw new ConfigException("File processing is locked (for the province)");
