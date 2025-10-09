@@ -30,8 +30,8 @@ public class MeterReadingEnergySummaryDaoImpl implements MeterReadingEnergySumma
     @Transactional
     public void update(MeterReadingEnergySummary summary) {
         entityManager.merge(summary);
-        entityManager.flush();
-        entityManager.clear();
+        //entityManager.flush();
+        //entityManager.clear();
     }
 
     @Override
@@ -46,7 +46,7 @@ public class MeterReadingEnergySummaryDaoImpl implements MeterReadingEnergySumma
     @Transactional
     public void insert(MeterReadingEnergySummary summary) {
         entityManager.persist(summary);
-        entityManager.flush();
-        entityManager.clear();
+        //entityManager.flush();
+        //entityManager.clear();
     }
 }

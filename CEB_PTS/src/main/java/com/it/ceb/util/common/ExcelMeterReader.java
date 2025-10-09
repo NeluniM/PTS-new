@@ -117,6 +117,7 @@ public class ExcelMeterReader {
             if (file.isDirectory()) {
                 searchExcelFiles(file);
             } else {
+                //System.out.println("file name ##### "+file.getName());
                 processFile(file, billCycle);
             }
         }
@@ -161,7 +162,7 @@ public class ExcelMeterReader {
                 return;
             }
             for(MeasureCell cell: cellAddr){
-                if(cell.getCell()==null ||cell.getCell().isEmpty()){
+                if(cell.getReadRow()==null && cell.getReadCol()==null){
                     System.out.println("Not all EP measure cells are defined for model : " + modelId);
                     meterReadingFileModel.setStatus("ERROR");
                     meterReadingFileModel.setErrorReason("Not all EP measure cells defined");
@@ -245,7 +246,9 @@ public class ExcelMeterReader {
                 //--------------------------------------
                 BigDecimal[] coincidentPeak = null; //exp & imp values
 
+                System.out.println("@@@@@@@@@@@calling getCoincidentPeak@@@@@@@");
                 coincidentPeak = getCoincidentPeak(file.getParent(),meterPoint);
+                System.out.println("@@@@@@@@@@@finish getCoincidentPeak@@@@@@@");
                 meterReadingFileModel.setExportCoincidentPeak(coincidentPeak[0]);
                 meterReadingFileModel.setImportCoincidentPeak(coincidentPeak[1]);
                 //System.out.println("Coincident peak read successfully");
@@ -280,8 +283,8 @@ public class ExcelMeterReader {
     //          Reading type handling
     //==========================================================================
 
-    //Cell value reading ----------------------------------
-    private Map<Long, BigDecimal> readMeterReadingCellValues(List<MeasureCell> cellAddresses, File file) throws ConfigException, IOException, CorruptedFileException, CorruptedCellException {
+    //Cell value reading original ----------------------------------
+    /*private Map<Long, BigDecimal> readMeterReadingCellValues(List<MeasureCell> cellAddresses, File file) throws ConfigException, IOException, CorruptedFileException, CorruptedCellException {
 
         Map<Long, BigDecimal> readings = new HashMap<>();
         String extension = FilenameUtils.getExtension(file.getName()).toLowerCase();
@@ -321,10 +324,78 @@ public class ExcelMeterReader {
             //e.printStackTrace();//
             throw e;
         }
+    }*/
+
+    //Cell value reading ----------------------------------
+    private Map<Long, BigDecimal> readMeterReadingCellValues(List<MeasureCell> cellAddresses, File file) throws ConfigException, IOException, CorruptedFileException, CorruptedCellException {
+
+        Map<Long, BigDecimal> readings = new HashMap<>();
+        //String extension = FilenameUtils.getExtension(file.getName()).toLowerCase();
+
+        try {
+            //(FileInputStream fis = new FileInputStream(file)) {
+            //   Workbook workbook;
+
+            /*try {
+                if ("xlsx".equals(extension)) {
+                    workbook = new XSSFWorkbook(fis);
+                } else{
+                    workbook = new HSSFWorkbook(fis);
+                }
+            } catch (IOException e) {
+                //e.printStackTrace();//
+                throw new CorruptedFileException("Couldn't open (EP)");
+            }*/
+
+
+            //Sheet sheet = workbook.getSheetAt(0); // Assuming first sheet
+
+            for (MeasureCell cell : cellAddresses) {
+                BigDecimal val=null;
+                /*if (cell.getCell().matches("[A-Z]\\d+")) {
+                    val = CurrentReadingCalc(readSpecificCell(sheet, cell.getCell()) , cell.getValueCalc());
+                } else if (cell.getCell().matches("[A-Z]")) {
+                    val = CurrentReadingCalc(readLastCellInColumn(sheet, cell.getCell()), cell.getValueCalc());
+                } else {
+                    throw new ConfigException("Invalid cell address format");
+                }
+                */
+                if(cell.getReadRow()==null && cell.getReadCol()==null)
+                {
+                    System.out.println("no any cell to read");
+
+                }
+                else if(cell.getReadRow()==null)
+                {
+                    System.out.println("reading last row........");
+                    //double cellVal = excelMeterReader.readLastRowOfColumn(fileName, cell.getReadCol());
+                    String cellValue = readLastRowOfColumn(file.getPath(), cell.getReadCol());
+                    val = CurrentReadingCalc( cellValue, cell.getValueCalc());
+                }
+                else
+                {
+                    System.out.println("reading cel value.............");
+                    //double cellVal = excelMeterReader.readCellValue(fileName,  cell.getReadCol(), cell.getReadRow().intValue());
+                    String cellValue = readCellValue(file.getPath(),  cell.getReadCol(), cell.getReadRow().intValue());
+                    val = CurrentReadingCalc(cellValue , cell.getValueCalc());
+                    System.out.println("read cell value"+val.toString());
+                }
+
+                readings.put(cell.getMeasureId(), val);
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            //throw e;
+        }
+        return readings;
     }
 
     //Calculation of current reading------------------------
     private BigDecimal CurrentReadingCalc(String value, String operator){
+        System.out.println("CurrentReadingCalc value"+value);
+        System.out.println("CurrentReadingCalc operator"+operator);
         try {
             if (operator == null || operator.trim().isEmpty()) {
                 return new BigDecimal(value).setScale(0, RoundingMode.HALF_UP);
@@ -354,7 +425,145 @@ public class ExcelMeterReader {
     }
 
     //coincident peak reading--------------------------------
-    private BigDecimal[] getCoincidentPeak(String parentDir, MeterPoint meterPoint) throws CorruptedFileException, IOException, CorruptedCellException, ConfigException {
+    private BigDecimal[] getCoincidentPeak(String parentDir, MeterPoint meterPoint) throws CorruptedFileException, IOException, CorruptedCellException, ConfigException, Exception {
+
+        System.out.println("parentDir"+parentDir);
+        File folder = new File(parentDir);
+        if (!folder.exists() || !folder.isDirectory()) {
+            System.out.println("Empty directory");
+            throw new FileNotFoundException("No files found (Empty directory)");
+        }
+
+        String filePrefix = meterPoint.getMeter().getMeterHeader().getMeterModel().getLoadPrefix();
+
+        FileFilter lpFilter = file -> {
+            if (file.isDirectory()) return false;
+            String extension = FilenameUtils.getExtension(file.getName()).toLowerCase();
+            if (!EXCEL_EXTENSIONS.contains(extension)) return false;
+            String nameWithoutExtension = FilenameUtils.removeExtension(file.getName());
+            return nameWithoutExtension.matches("[a-zA-Z0-9]+-" + filePrefix + ".*");
+        };
+
+        File[] lpFiles = folder.listFiles(lpFilter);
+        if (lpFiles == null || lpFiles.length == 0) {
+            System.out.println("No LP files found");
+            throw new FileNotFoundException("No LP files found");
+        }
+
+        //retrieving the measure cells for coin. peak reading
+        List<MeasureCell> msrCell = meterDao.getMeasureCellById(
+                meterPoint.getMeter().getMeterHeader().getMeterModel().getModelId().toString(),
+                "LP"
+        );
+        if(msrCell==null){
+            throw new ConfigException("No measure cells defined (LP)");
+        }
+
+
+        File excelFile = lpFiles[0];
+        String extension = FilenameUtils.getExtension(excelFile.getName()).toLowerCase();
+        //Workbook workbook;
+
+        /*try {
+            if ("xlsx".equals(extension)) {
+                workbook = new XSSFWorkbook(new FileInputStream(excelFile));
+            } else {
+                workbook = new HSSFWorkbook(new FileInputStream(excelFile));
+            }
+        } catch (IOException e) {
+            //e.printStackTrace(); // Handle the exception as needed
+            throw new CorruptedFileException("Couldn't open (LP)");
+        }*/
+
+        //assigning the coefficient for division
+        String coef = msrCell.get(1).getValueCalc();
+        int divideCoef = 1;
+
+        if (coef != null) {
+            coef = coef.trim();
+            try{
+                if (coef.startsWith("/")) {
+                    divideCoef = Integer.parseInt(coef.substring(1));
+                } else if (coef.startsWith("*")) {
+                    divideCoef = (int) (1 / Float.parseFloat(coef.substring(1)));
+                }
+            }catch(Exception e){
+                throw new ConfigException("Invalid divisor for coin.peak.");
+            }
+
+        }
+
+        // Sheet sheet = workbook.getSheetAt(0);
+
+        BigDecimal expValue = null;
+        BigDecimal impValue= null;
+        long reverse = msrCell.get(1).getReversed() != null ? msrCell.get(1).getReversed() : 1L;
+
+        if (this.coincidentPeak != null) {
+
+            //getting the coincident peak column (this is only for F/M/T cell combination)
+            String cell="";
+            if(msrCell.get(0).getReadCol().trim().equals("FMT")){
+                cell=meterPoint.getPeakDemandColumn();
+                if(cell.isEmpty()){throw new ConfigException("No peak demand column defined");}
+            }else{
+                cell=msrCell.get(0).getReadCol();
+            }
+
+            if (msrCell.get(0).getReadCol().trim().equals(msrCell.get(1).getReadCol().trim())) {
+                //String tmp = readMatchingColumnValue(sheet, "B", cell, this.coincidentPeak);
+                String tmp = readMatchingCellValue(excelFile.getPath(),"B",  this.coincidentPeak,cell);
+                if(tmp == null || tmp.isEmpty()){ tmp= readMatchingCellValue(excelFile.getPath(), "B", this.coincidentPeak2, cell);}
+                if(tmp == null || tmp.isEmpty()){ tmp= readMatchingCellValue(excelFile.getPath(), "B", this.coincidentPeak3, cell);}
+                if(tmp == null || tmp.isEmpty()){
+                    throw new CorruptedCellException("Coincident peak not found");
+                }
+                tmp = tmp.replaceAll("^(-?\\d+(\\.\\d+)?).*", "$1");
+                BigDecimal tmpVal = new BigDecimal(tmp).divide(new BigDecimal(divideCoef),3,RoundingMode.HALF_UP);
+                tmpVal= tmpVal.multiply(new BigDecimal(reverse));
+                if(tmpVal.compareTo(BigDecimal.ZERO) >= 0){
+                    expValue = tmpVal;
+                }else{
+                    impValue = tmpVal;
+                }
+
+            }else{
+                String tmpExp = readMatchingCellValue(excelFile.getPath(), "B", this.coincidentPeak, cell);
+                if(tmpExp == null || tmpExp.isEmpty()){ tmpExp= readMatchingCellValue(excelFile.getPath(), "B", this.coincidentPeak2, cell);}
+                if(tmpExp == null || tmpExp.isEmpty()){ tmpExp= readMatchingCellValue(excelFile.getPath(), "B", this.coincidentPeak3, cell);}
+                String tmpImp = readMatchingCellValue(excelFile.getPath(), "B", msrCell.get(1).getReadCol(), this.coincidentPeak);
+                if(tmpImp == null || tmpImp.isEmpty()){ tmpImp= readMatchingCellValue(excelFile.getPath(), "B", this.coincidentPeak2, msrCell.get(0).getReadCol());}
+                if(tmpImp == null || tmpImp.isEmpty()){ tmpImp= readMatchingCellValue(excelFile.getPath(), "B", this.coincidentPeak3, msrCell.get(0).getReadCol());}
+
+                if((tmpImp == null || tmpImp.isEmpty()) && ( tmpExp == null || tmpExp.isEmpty())){
+                    throw new CorruptedCellException("Coincident peak not found");
+                }
+                if(!(tmpImp == null || tmpImp.isEmpty())){
+                    tmpImp = tmpImp.replaceAll("^(-?\\d+(\\.\\d+)?).*", "$1");
+                    impValue = new BigDecimal(tmpImp).divide(new BigDecimal(divideCoef),3,RoundingMode.HALF_UP);;
+                }
+                if(!(tmpExp == null || tmpExp.isEmpty())){
+                    tmpExp = tmpExp.replaceAll("^(-?\\d+(\\.\\d+)?).*", "$1");
+                    expValue = new BigDecimal(tmpExp).divide(new BigDecimal(divideCoef),3,RoundingMode.HALF_UP);;
+                }
+                if(reverse == -1L){
+                    BigDecimal tmp = expValue;
+                    expValue = impValue;
+                    impValue = tmp;
+                }
+            }
+        }
+        //workbook.close();
+
+        BigDecimal[] returnArr = new BigDecimal[2];
+        returnArr[0] = expValue != null ? expValue : BigDecimal.ZERO;
+        returnArr[1] = impValue != null ? impValue : BigDecimal.ZERO;
+        return returnArr;
+
+    }
+
+    /*
+    private BigDecimal[] getCoincidentPeakOriginal(String parentDir, MeterPoint meterPoint) throws CorruptedFileException, IOException, CorruptedCellException, ConfigException {
 
         File folder = new File(parentDir);
         if (!folder.exists() || !folder.isDirectory()) {
@@ -488,7 +697,7 @@ public class ExcelMeterReader {
         return returnArr;
 
     }
-
+*/
 
     //==========================================================================
     //          cell reading operations
@@ -519,7 +728,148 @@ public class ExcelMeterReader {
         }
         return lastValue;
     }
-    private String readMatchingColumnValue(Sheet sheet, String col1, String col2, String col1value) {
+
+
+    //new
+    public String readLastRowOfColumn1(String filePath, String column ) throws Exception {
+        String line;
+        String lastValue = null;
+        int columnIndex = columnLetterToNumber(column);
+        System.out.println("columnIndex"+columnIndex);
+
+        BufferedReader br = new BufferedReader(new FileReader(filePath));
+        while ((line = br.readLine()) != null) {
+            String[] cells = line.split("\t", -1); // keep empty cells
+            System.out.println("cells length"+cells.length);
+            if (columnIndex <= cells.length) {
+                lastValue = cells[columnIndex - 1]; // 1-based to 0-based
+
+            }
+        }
+
+
+        /*if (lastValue == -1) {
+            throw new IllegalArgumentException("yolumnIndex + " not found in file.");
+        }*/
+        br.close();
+        return lastValue;
+    }
+
+    public String readLastRowOfColumn(String filePath, String column ) throws Exception {
+        //String filePath = "C:/path/to/211279918-BH.xls"; // actually TSV
+        String lastLine = null;
+        String lastValue = null;
+        int columnIndex = columnLetterToNumber(column);
+
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (!line.trim().isEmpty()) {
+                    lastLine = line; // keep updating until the end
+                }
+            }
+
+            if (lastLine != null) {
+                String[] columns = lastLine.split("\t"); // tab separator
+                if (columns.length >= columnIndex) { // column D exists
+                    lastValue = columns[columnIndex-1]; // index 3 = 4th column (D)
+                    System.out.println("Last row, column D = " + lastValue);
+
+                } else {
+                    System.out.println("No column D in the last row.");
+                }
+            } else {
+                System.out.println("File is empty.");
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return lastValue;
+    }
+
+    //new
+    public String readCellValue(String fileName, String column, int targetRow) throws Exception {
+
+        int targetCol = columnLetterToNumber(column);
+        String value = null;
+        BufferedReader br = new BufferedReader(new FileReader(fileName));
+        String line;
+        int currentRow = 0;
+
+        while ((line = br.readLine()) != null) {
+            currentRow++;
+
+            if (currentRow == targetRow) {
+                String[] cells = line.split("\t", -1); // keep empty cells
+                if (targetCol <= cells.length) {
+                    value = cells[targetCol - 1]; // convert to 0-based index
+                   // System.out.println("Cell (" + targetRow + "," + targetCol + ") = " + value);
+                    //value = Double.parseDouble(valueStr);
+                } else {
+                   // System.out.println("Column " + targetCol + " does not exist in row " + targetRow);
+                }
+                break; // stop after finding the row
+            }
+        }
+
+        if (currentRow < targetRow) {
+            System.out.println("Row " + targetRow + " does not exist in file.");
+        }
+
+        return value;
+    }
+
+
+    private String readMatchingCellValue(String  fileName, String column1, String column1Value, String column2) throws Exception{
+        //int col1Index = CellReference.convertColStringToIndex(col1);
+        //int col2Index = CellReference.convertColStringToIndex(col2);
+
+        System.out.println("staring readMatchingCellValue>................");
+        System.out.println("fileName - "+fileName);
+        //System.out.println("column1 - "+column1);
+        System.out.println("column1Value - "+column1Value);
+
+        int columnIntdex1 = columnLetterToNumber(column1);
+
+
+        /************************/
+        BufferedReader br = new BufferedReader(new FileReader(fileName));
+        String line;
+        int currentRow = 0;
+        String matchedCellValue = null;
+
+        while ((line = br.readLine()) != null) {
+            currentRow++;
+            //System.out.println("line in row "+currentRow+" - "+line);
+
+            String[] cells = line.split("\t", -1); // keep empty cells
+            if (columnIntdex1 <= cells.length) {
+                String value = cells[columnIntdex1 - 1]; // convert to 0-based index
+                //System.out.println("Cell (" + targetRow + "," + targetCol + ") = " + value);
+                //value = Double.parseDouble(valueStr);
+               // System.out.println("value in row "+currentRow+" - "+value);
+                if(value.equals(column1Value))
+                {
+                    matchedCellValue = readCellValue(fileName,  column2, currentRow);
+                    break;
+                }
+            } else {
+               // System.out.println("Column " + columnIntdex1 + " does not exist in row " + currentRow);
+            }
+            //break; // stop after finding the row
+
+        }
+        br.close();
+
+
+        /********************************/
+
+
+        return matchedCellValue;
+    }
+
+    private String readMatchingColumnValue1(Sheet sheet, String col1, String col2, String col1value) {
         int col1Index = CellReference.convertColStringToIndex(col1);
         int col2Index = CellReference.convertColStringToIndex(col2);
 
@@ -535,6 +885,15 @@ public class ExcelMeterReader {
         }
 
         return null;
+    }
+
+    public static int columnLetterToNumber(String col) {
+        int result = 0;
+        col = col.toUpperCase();
+        for (int i = 0; i < col.length(); i++) {
+            result = result * 26 + (col.charAt(i) - 'A' + 1);
+        }
+        return result;
     }
 
 

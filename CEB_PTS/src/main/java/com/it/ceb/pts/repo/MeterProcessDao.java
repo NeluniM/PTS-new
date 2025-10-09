@@ -33,7 +33,7 @@ public interface MeterProcessDao {
 
     //DB write-----------------------------
     void saveMeterReading(MeterReading meterReading);
-    List<MeterReading> saveMeterReadingList(List<MeterReading> meterReadingsList) throws Exception;
+    List<MeterReading> saveMeterReadingList(List<MeterReading> meterReadingsList);
     BillCycle setBillCycle_relation(Long billCycleNo);
     Meter setMeter_relation(String serialNo);
     Measure setMeasure_relation(Long measureId);
@@ -71,6 +71,9 @@ public interface MeterProcessDao {
 
     List<MeterReadingFileModel> getMeterReadingFileModelList();
 
-    public void saveMeterReadingMain(List<MeterReading> meterReadingList , MeterReadingLog mrLog , List<MeterReadingErrLog> meterReadingErrLogList , List<MeterReadingEnergySummary> meterReadingEnergyList ,ProvinceEnergySummary totalEnergy , String billCycle , String division , String province) ;
+    void saveMeterReadings(List<MeterReading> meterReadingsList,
+                           List<MeterReadingEnergySummary> meterReadingEnergyList, ProvinceEnergySummary totalEnergy, Long billCycle,
+                           String division, String province);
+
 
 }

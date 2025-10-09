@@ -21,10 +21,10 @@ public class MeasureCell {
     @Column(name = "MEASURE_ID", nullable = false)
     private Long measureId;
 
-    @Size(max = 20)
+    /*@Size(max = 20)
     @Column(name = "CELL", length = 20)
     private String cell;
-
+*/
     @Size(max = 5)
     @Column(name = "FILE_TYPE", length = 5)
     private String fileType;
@@ -36,6 +36,12 @@ public class MeasureCell {
     @Size(max = 5)
     @Column(name = "REVERSED")
     private Long reversed;
+
+    @Column(name = "READ_ROW")
+    private Long readRow;
+
+    @Column(name = "READ_COL")
+    private String readCol;
 
     @ManyToOne(fetch = FetchType.EAGER, optional = false)
     @OnDelete(action = OnDeleteAction.RESTRICT)

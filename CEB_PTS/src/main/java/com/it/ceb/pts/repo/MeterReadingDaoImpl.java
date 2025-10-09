@@ -392,7 +392,7 @@ public class MeterReadingDaoImpl implements MeterReadingDao {
         } else {
             entityManager.merge(meterReading);
         }
-        entityManager.flush();
+        //entityManager.flush();
     }
 
     @Override

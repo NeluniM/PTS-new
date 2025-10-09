@@ -68,7 +68,7 @@ public class TariffDaoImpl implements TariffDao {
             } else {
                 tariff = entityManager.merge(tariff);
             }
-            entityManager.flush();
+            //entityManager.flush();
             return tariff;
         } catch (Exception e) {
             e.printStackTrace();
@@ -89,7 +89,7 @@ public class TariffDaoImpl implements TariffDao {
                 }
                 savedTariffs.add(tariff);
             }
-            entityManager.flush();
+            // entityManager.flush();
             return savedTariffs;
         } catch (Exception e) {
             e.printStackTrace();
@@ -148,7 +148,7 @@ public class TariffDaoImpl implements TariffDao {
                     "UPDATE Tariff t SET t.isCurrent = 0L WHERE t.isCurrent = 1L"
             ).executeUpdate();
             System.out.println("Updated " + updatedCount + " records to non-current");
-            entityManager.flush();
+            // entityManager.flush();
         } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException("Failed to update previous records to non-current", e);

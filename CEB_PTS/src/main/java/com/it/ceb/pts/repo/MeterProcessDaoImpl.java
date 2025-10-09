@@ -14,6 +14,10 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
+import org.jboss.logging.Logger;
+
+
+
 
 
 @Repository
@@ -21,7 +25,7 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
 
     @PersistenceContext
     private EntityManager entityManager;
-
+    private static final Logger LOGGER = Logger.getLogger(MeterProcessDaoImpl.class);
     private List<MeterReadingFileModel> meterReadingFileModelList;
 
     //-----------------------------------------------------------------------------------
@@ -83,7 +87,9 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
                     "SELECT b FROM BillCycle b WHERE b.billCycleNo = :billCycleNo",
                     BillCycle.class);
             query.setParameter("billCycleNo", billCycleNo);
-            if(query.getResultList().isEmpty()){
+            System.out.println("billCycleNo "+billCycleNo+"@@");
+            System.out.println("Line1");
+            /*if(query.getResultList().isEmpty()){
                 throw new ConfigException("Bill cycle is not set");
             }
             if(query.getSingleResult().getBillYear()== null){
@@ -92,16 +98,17 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
                 throw new ConfigException("Bill cycle month is not set");
             }if(query.getSingleResult().getCoincidentPeakDate()== null){
                 throw new ConfigException("Coincident-peak date is not set");
-            }
+            }*/
             return query.getSingleResult();
         } catch (Exception e) {
             System.out.println("Error while getting bill cycle: " + e.getMessage());
             //e.printStackTrace();//
-            if (e instanceof ConfigException){
+           /* if (e instanceof ConfigException){
                 throw e;
             }else{
                 throw new ConfigException("Failed while getting bill cycle details");
-            }
+            }*/
+            return null;
         }
     }
 
@@ -118,12 +125,12 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             query.setParameter("license", license);
             query.setParameter("province", province);
             if(query.getResultList().isEmpty() ||
-                query.getSingleResult().getIsUploadLocked()==null||
-                query.getSingleResult().getIsReadingProcessLocked()==null){
+                    query.getSingleResult().getIsUploadLocked()==null||
+                    query.getSingleResult().getIsReadingProcessLocked()==null){
                 throw new ConfigException("Province config is not set");
             }
             if(query.getSingleResult().getIsUploadLocked().equals(0L)){
-                throw new ConfigException("Please lock the file upload for the province");
+                throw new ConfigException("File upload is unlocked (for the province)");
             }
             if(query.getSingleResult().getIsReadingProcessLocked().equals(1L)){
                 throw new ConfigException("File processing is locked (for the province)");
@@ -231,27 +238,11 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
 
     @Override
     @Transactional
-    public List<MeterReading> saveMeterReadingList(List<MeterReading> meterReadingsList) throws Exception{
-        System.out.println("saveMeterReadingList 01");
+    public List<MeterReading> saveMeterReadingList(List<MeterReading> meterReadingsList) {
         for (MeterReading meterReading : meterReadingsList) {
-
-           // System.out.println("meterReadings " + meterReading.getSerialNo());
-            System.out.println("meterReadings " + meterReading.getSerialNo());
-            System.out.println("bill cycle " + meterReading.getBillCycle());
-            System.out.println("meter Reading " + meterReading.getCurrentReading());
-//            System.out.println("meter Reading " + meterReading.getCurrentReading());
-            System.out.println("saveMeterReadingList 02");
             entityManager.persist(meterReading);
-            System.out.println("saveMeterReadingList 03");
         }
-        System.out.println("saveMeterReadingList 04");
-        try {
-//            entityManager.flush();
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw e; // rethrow after logging
-        }
-        System.out.println("saveMeterReadingList 05");
+        // entityManager.flush();
         return meterReadingsList;
     }
 
@@ -452,9 +443,13 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
 
         for (MeterReadingFileModel meterReadingfile : meterReadingsFileList) {
             //DPO energies
+
             for (MeterReadingRecordModel meterReading : meterReadingfile.getMeterReadingRecordModelList()) {
                 if ("D".equals(meterReading.getDpo())) {
+                    LOGGER.info("[DAY] SerialNo taken for calculation: " + meterReadingfile.getSerialNo());
+                    LOGGER.info("[DAY] Energy value added: " + meterReading.getEnergy());
                     totalEn.setDayEnergy(totalEn.getDayEnergy().add(meterReading.getEnergy()));
+                    LOGGER.info("[DAY] Current total energy after addition: " + totalEn.getDayEnergy());
                 } else if ("P".equals(meterReading.getDpo())) {
                     totalEn.setPeakEnergy(totalEn.getPeakEnergy().add(meterReading.getEnergy()));
                 } else if ("O".equals(meterReading.getDpo())) {
@@ -479,10 +474,10 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             throw new ConfigException("No tariff set for energy adjustment");
         }
         if (!tariff.stream().map(t -> t.getTariffCategoryCode().getTariffCategoryCode())
-                  .collect(Collectors.toSet())
-                  .containsAll(Set.of("DAY_ADJ_FACTOR", "PEAK_ADJ_FACTOR", "OFFP_ADJ_FACTOR", "PEAK_DMN_FACTOR"))) {
-           System.out.println("Missing required tariff categories for license code: " + licenseCode);
-           throw new ConfigException("All the tariff is not set for energy adjustment");
+                .collect(Collectors.toSet())
+                .containsAll(Set.of("DAY_ADJ_FACTOR", "PEAK_ADJ_FACTOR", "OFFP_ADJ_FACTOR", "PEAK_DMN_FACTOR"))) {
+            System.out.println("Missing required tariff categories for license code: " + licenseCode);
+            throw new ConfigException("All the tariff is not set for energy adjustment");
         }
 
         for (Tariff tar : tariff) {
@@ -589,29 +584,20 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
     }
 
 
-    @Transactional
     @Override
-    public void saveMeterReadingMain(List<MeterReading> meterReadingList , MeterReadingLog mrLog , List<MeterReadingErrLog> meterReadingErrLogList , List<MeterReadingEnergySummary> meterReadingEnergyList ,ProvinceEnergySummary totalEnergy , String billCycle , String division , String province) {
-        try{
-            System.out.println("DB writing started");
-            saveMeterReadingList(meterReadingList);// excel meter readings
-            System.out.println("Meter readings saved successfully");
-            MeterReadingLog mrl = saveMeterReadingLog(mrLog);// log summary
-            System.out.println("Log summary saved successfully");
-            saveMeterReadingLogErrorList(meterReadingErrLogList,mrl);// log errors
-            System.out.println("Log errors saved successfully");
-            saveMeterReadingEnergySummary(meterReadingEnergyList);//meter reading energy summary
-            System.out.println("Meter reading energy summary saved successfully");
-            saveProvinceEnergySummary(totalEnergy); //total energy summary
-            System.out.println("Total energy summary saved successfully");
-            System.out.println("DB writing completed successfully");
-            lockProvinceProcess(Long.parseLong(billCycle), division, province);
-            System.out.println("Province process locked");
-        }
-        catch (Exception e) {
-            //System.out.println("Error checking current bill cycle: " + e.getMessage());
-            e.printStackTrace();//
-    }
+    @Transactional
+    public void saveMeterReadings(List<MeterReading> meterReadingList
+            ,List<MeterReadingEnergySummary> meterReadingEnergyList
+            ,ProvinceEnergySummary totalEnergy
+            ,Long billCycle
+            ,String division
+            , String province) {
+        saveMeterReadingList(meterReadingList);
+        saveMeterReadingEnergySummary(meterReadingEnergyList);
+        saveProvinceEnergySummary(totalEnergy);
+        lockProvinceProcess(billCycle, division, province);
+        // entityManager.flush();
+
     }
 
 

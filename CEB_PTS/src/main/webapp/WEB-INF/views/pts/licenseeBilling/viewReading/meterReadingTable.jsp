@@ -2,6 +2,7 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+
 <div>
     <c:choose>
         <c:when test="${not empty msg}">
@@ -150,8 +151,8 @@
                                 <td>${meterReadingFile.pss}</td>
                                 <td><a class="serialNoLink" href="meterSearch?billCycle=${billCycle}&serialNo=${meterReadingFile.serialNo}">${meterReadingFile.serialNo}</a></td>
                                 <td>${meterReadingFile.status}<br><div class="errorReason">${meterReadingFile.errorReason}</div></td>
-                                <td></td>   <%-- Time of use --%>
-                                <td></td>   <%-- Flow --%>
+                                <td></td>
+                                <td></td>
                                 <td></td>
                                 <td></td>
                                 <td></td>
@@ -172,6 +173,7 @@
                     <th></th>
                     <th>Total Energy ${billMonth} ${billYear}</th>
                     <th>Total Energy  with Upward Adjustment ${billMonth} ${billYear}</th>
+                </tr>
                 </thead>
                 <tbody>
                 <tr>
@@ -305,41 +307,16 @@
     </c:choose>
 </div>
 
-
 <script>
     $(document).ready(function() {
         console.log("Ready to print view reading");
 
         const bc = $('#billCycle').val();
         const div = $('#divisionDropdown').val();
-        //-------------------------------------------------------------------
-        //            bill finalize
-        //-------------------------------------------------------------------
-
-        // $('#fin_btn').click(function () {
-        //
-        //     $.ajax({
-        //         url: '/PTS/finalizeBill',
-        //         type: 'POST',
-        //         data: {
-        //             billCycle: bc,
-        //             division: div
-        //         },
-        //         success: function (response) {
-        //             //refresh the page
-        //             location.reload();
-        //         },
-        //         error: function (xhr, status, error) {
-        //             console.error('Error finalizing bill:', error);
-        //         }
-        //     });
-        // });
-
 
         //-------------------------------------------------------------------
         //            print invoice
         //-------------------------------------------------------------------
-
         const button = $('#view_reading_print');
 
         button.click(function(e) {
@@ -359,18 +336,12 @@
                     division: div
                 },
                 xhrFields: {
-                    responseType: 'blob' // Expect binary data (PDF)
+                    responseType: 'blob'
                 },
                 success: function(response, status, xhr) {
                     button.val('Print').prop('disabled', false);
-
-                    // Create a blob from the response
                     const blob = new Blob([response], { type: 'application/pdf' });
-
-                    // Create a URL for the blob
                     const url = window.URL.createObjectURL(blob);
-
-                    // Open PDF in a new tab
                     window.open(url, '_blank');
                 },
                 error: function(xhr, status, error) {

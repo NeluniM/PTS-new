@@ -24,7 +24,7 @@ public class FileUploadHeaderDaoImpl implements FileUploadHeaderDao {
     public void save(FileUploadHeader header) throws Exception {
         //     try {
         entityManager.persist(header);
-        entityManager.flush();
+        //entityManager.flush();
 //        } catch (Exception e) {
 //            throw new RuntimeException("Failed to save FileUploadHeader: " + e.getMessage(), e);
 //        }
@@ -41,7 +41,7 @@ public class FileUploadHeaderDaoImpl implements FileUploadHeaderDao {
     public void update(FileUploadHeader header) throws Exception{
         //      try {
         entityManager.merge(header);
-        entityManager.flush();
+        //entityManager.flush();
 //        } catch (Exception e) {
 //            throw new RuntimeException("Failed to update FileUploadHeader: " + e.getMessage(), e);
 //        }
@@ -135,7 +135,7 @@ public class FileUploadHeaderDaoImpl implements FileUploadHeaderDao {
             FileUploadHeader header = entityManager.find(FileUploadHeader.class, uploadId);
             if (header != null) {
                 entityManager.remove(header);
-                entityManager.flush();
+                //entityManager.flush();
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to delete FileUploadHeader: " + e.getMessage(), e);
