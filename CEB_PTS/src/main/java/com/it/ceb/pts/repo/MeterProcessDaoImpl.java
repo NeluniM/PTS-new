@@ -16,10 +16,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import org.jboss.logging.Logger;
 
-
-
-
-
 @Repository
 public class MeterProcessDaoImpl implements MeterProcessDao {
 
@@ -41,7 +37,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             return query.getSingleResult();
         } catch (Exception e) {
             System.out.println("Error while getting current bill cycle: " + e.getMessage());
-            //e.printStackTrace();//
             return null;
         }
     }
@@ -57,7 +52,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
         } catch (Exception e) {
             System.out.println("error while getting the meter by serial no");
             System.out.println(e.getMessage());
-            //e.printStackTrace();//
             return null;
         }
     }
@@ -74,7 +68,27 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
         } catch (Exception e) {
             System.out.println("error while getting the meter by serial no");
             System.out.println(e.getMessage());
-            //e.printStackTrace();//
+            return null;
+        }
+    }
+
+    // ------------------------------------------------------------------
+    //           Meter Management helpers (for Update Meter screen)
+    // ------------------------------------------------------------------
+
+    @Override
+    @Transactional(readOnly = true)
+    public Meter getMeterByCebSerialNo(String cebSerialNo) {
+        try {
+            TypedQuery<Meter> query = entityManager.createQuery(
+                    "SELECT m FROM Meter m WHERE m.cebSerialNo = :cebSerialNo",
+                    Meter.class
+            );
+            query.setParameter("cebSerialNo", cebSerialNo);
+            List<Meter> result = query.getResultList();
+            return result.isEmpty() ? null : result.get(0);
+        } catch (Exception e) {
+            System.out.println("Error while getting Meter by CEB serial no: " + e.getMessage());
             return null;
         }
     }
@@ -89,29 +103,12 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             query.setParameter("billCycleNo", billCycleNo);
             System.out.println("billCycleNo "+billCycleNo+"@@");
             System.out.println("Line1");
-            /*if(query.getResultList().isEmpty()){
-                throw new ConfigException("Bill cycle is not set");
-            }
-            if(query.getSingleResult().getBillYear()== null){
-                throw new ConfigException("Bill cycle year is not set");
-            } else if(query.getSingleResult().getBillMonth()== null){
-                throw new ConfigException("Bill cycle month is not set");
-            }if(query.getSingleResult().getCoincidentPeakDate()== null){
-                throw new ConfigException("Coincident-peak date is not set");
-            }*/
             return query.getSingleResult();
         } catch (Exception e) {
             System.out.println("Error while getting bill cycle: " + e.getMessage());
-            //e.printStackTrace();//
-           /* if (e instanceof ConfigException){
-                throw e;
-            }else{
-                throw new ConfigException("Failed while getting bill cycle details");
-            }*/
             return null;
         }
     }
-
 
     @Transactional(readOnly = true)
     @Override
@@ -165,7 +162,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
 
         } catch (Exception e) {
             System.out.println("Error clearing existing meter reading logs: " + e.getMessage());
-            //e.printStackTrace();//
         }
 
         //Meter reading ------------------------------------------------------------------
@@ -190,7 +186,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             System.out.println("Meter-Readings cleared");
         } catch (Exception e) {
             System.out.println("Error clearing existing meter readings: " + e.getMessage());
-            //e.printStackTrace();//
         }
 
         //Meter reading energy summaries------------------------------------------------
@@ -204,7 +199,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
 
         }catch (Exception e) {
             System.out.println("Error clearing existing meter reading energy summaries: " + e.getMessage());
-            //e.printStackTrace();//
         }
 
         //Province energy summary ---------------------------------------------------
@@ -219,7 +213,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             System.out.println("Province-Energy-Summaries cleared");
         } catch (Exception e) {
             System.out.println("Error clearing existing province energy summaries: " + e.getMessage());
-            //e.printStackTrace();//
         }
 
         return null;
@@ -242,7 +235,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
         for (MeterReading meterReading : meterReadingsList) {
             entityManager.persist(meterReading);
         }
-        // entityManager.flush();
         return meterReadingsList;
     }
 
@@ -290,10 +282,8 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             entityManager.merge(provinceConfig);
         } catch (Exception e) {
             System.out.println("Error locking province process: " + e.getMessage());
-            //e.printStackTrace();//
         }
     }
-
 
     //  -------------   helper methods for meter reading table properties ------------------------
 
@@ -325,7 +315,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             return query.getResultList();
         } catch (Exception e) {
             System.out.println("Error while getting previous readings:"+e.getMessage());
-            //e.printStackTrace();//
             return Collections.emptyList();
         }
     }
@@ -359,12 +348,9 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
         } catch (Exception e) {
             System.out.println("error while getting the measure cell by model id");
             System.out.println(e.getMessage());
-            //e.printStackTrace();//
             return null;
         }
     }
-
-
 
     //-----------------------------------------------------------------------------------
     //                   Meter Reading Log
@@ -386,7 +372,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
     public DistributionLicense setLicense_relation(String licenseCode){
         return  entityManager.find(DistributionLicense.class, licenseCode);
     }
-
 
     //-----------------------------------------------------------------------------------
     //                   Meter Reading Error Log
@@ -442,7 +427,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
         totalEn.setCoincidentPeak(BigDecimal.ZERO);
 
         for (MeterReadingFileModel meterReadingfile : meterReadingsFileList) {
-            //DPO energies
 
             for (MeterReadingRecordModel meterReading : meterReadingfile.getMeterReadingRecordModelList()) {
                 if ("D".equals(meterReading.getDpo())) {
@@ -457,15 +441,12 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
                 }
             }
 
-            //coincident peak
             totalEn.setCoincidentPeak(
                     totalEn.getCoincidentPeak().add(meterReadingfile.getImportCoincidentPeak()));
             totalEn.setCoincidentPeak(
                     totalEn.getCoincidentPeak().add(meterReadingfile.getExportCoincidentPeak()));
         }
 
-
-        //upward adjustment ---------------------------------
         System.out.println("Calculating upward adjustments");
         List<Tariff> tariff = getTariff(licenseCode);
 
@@ -507,7 +488,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             entityManager.persist(totalEn);
         }catch (Exception e) {
             System.out.println("an error occured :" + e.getMessage());
-            //e.printStackTrace();//
         }
     }
 
@@ -519,7 +499,6 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
                 entityManager.persist(total);
             }catch (Exception e){
                 System.out.println("an error occured while saving meter reading energy summary:"+e.getMessage());
-                //e.printStackTrace();//
             }
         }
     }
@@ -560,14 +539,12 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
         return meterReadingEnergySummeries;
     }
 
-
     @Override
     public List<MeterReadingFileModel> getMeterReadingFileModelList() {
         return this.meterReadingFileModelList;
     }
 
     private Boolean checkCurrentBillCycle(Long billCycleNo) {
-        //check whether this is the curent bill cycle (is current ==1)
         TypedQuery<Long> query = entityManager.createQuery(
                 "SELECT bc.isCurrent FROM BillCycle bc WHERE bc.billCycleNo = :billCycleNo",
                 Long.class);
@@ -578,11 +555,9 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
             return isCurrent != null && isCurrent == 1;
         } catch (Exception e) {
             System.out.println("Error checking current bill cycle: " + e.getMessage());
-            //e.printStackTrace();//
             return false;
         }
     }
-
 
     @Override
     @Transactional
@@ -596,10 +571,5 @@ public class MeterProcessDaoImpl implements MeterProcessDao {
         saveMeterReadingEnergySummary(meterReadingEnergyList);
         saveProvinceEnergySummary(totalEnergy);
         lockProvinceProcess(billCycle, division, province);
-        // entityManager.flush();
-
     }
-
-
-
 }

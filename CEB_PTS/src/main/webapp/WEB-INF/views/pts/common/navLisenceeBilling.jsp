@@ -93,6 +93,20 @@
                 <span style="font-size: 0.8rem;">Config</span>
             </a>
         </div>
+
+        <div class="nav-item text-center" style="width: 160px;">
+            <a class="nav-link d-flex flex-column align-items-center ${param.activeSelection eq 'Meter Management' ? 'activeSelection' : ''}" href="meterManagement">
+                <div class="icon-container">
+                    <img src="./icons/meterManagement.svg" alt="Meter Management Icon" style="width: 40px; height: 40px; margin-bottom: 3px;">
+                </div>
+                <span style="font-size: 0.8rem; white-space: nowrap;">Meter Management</span>
+            </a>
+        </div>
+
+
+
+
+
     </div>
 
 

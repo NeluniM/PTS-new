@@ -85,6 +85,121 @@ public class MeterPointController {
         return "pts/licenseeBilling/processReading/processMeterReading"; // Return the same page after form submission
     }
 
+
+
+    //meter management-1
+    @Transactional
+    @RequestMapping(value = "/meterManagement", method = RequestMethod.GET)
+    public String meterManagement(Model model) {
+
+        // optional: if you use these in the header/title
+        model.addAttribute("activeSelection", "Meter Management");
+        model.addAttribute("description", "Meter & Meter Points");
+
+        // this must match the JSP path you created
+        return "pts/licenseeBilling/meterManagement/meterManagementHome";
+    }
+
+    //2
+    @Transactional
+    @RequestMapping(value = "/meterManagement/meterHome", method = RequestMethod.GET)
+    public String meterHome(Model model) {
+
+        model.addAttribute("activeSelection", "Meter Management");
+        model.addAttribute("description", "Meter");
+
+        // maps to: /WEB-INF/views/pts/licenseeBilling/meterManagement/meterHome.jsp
+        return "pts/licenseeBilling/meterManagement/meterHome";
+    }
+
+    // -------------------------------------------------------------------------
+    //  Meter Management – Install & Update pages
+    // -------------------------------------------------------------------------
+
+    // 3
+    @Transactional
+    @RequestMapping(value = "/meterManagement/installMeter", method = RequestMethod.GET)
+    public String installMeter(Model model) {
+
+        model.addAttribute("activeSelection", "Meter Management");
+        model.addAttribute("description", "Install New Meter");
+
+        // maps to: /WEB-INF/views/pts/licenseeBilling/meterManagement/installMeter.jsp
+        return "pts/licenseeBilling/meterManagement/installMeter";
+    }
+
+    // ✅ NEW: handles form POST from installMeter.jsp (form action="installMeter")
+    @Transactional
+    @RequestMapping(value = "/installMeter", method = RequestMethod.POST)
+    public String saveInstallMeter(@RequestParam Map<String, String> params, Model model) {
+
+        LOGGER.info("Install New Meter form submitted with values: " + params);
+
+        // TODO: Map these params to your MeterHeader / Meter entities
+        //       and save using your DAO/repository classes.
+        //
+        // Example (pseudo):
+        // MeterHeader header = new MeterHeader();
+        // header.setBatchId(params.get("BATCH_ID"));
+        // ...
+        // meterDao.saveMeterHeader(header);
+        //
+        // Meter meter = new Meter();
+        // meter.setCebSerialNo(params.get("CEB_SERIAL_NO"));
+        // ...
+        // meterDao.saveMeter(meter);
+
+        // After saving, redirect back to meterHome
+        return "redirect:/meterManagement/meterHome";
+    }
+    // 4
+// -------------------------------------------------------------
+//   Meter Management - Update Meter (search by CEB Serial No)
+//   URL: /meterManagement/updateMeter?cebSerialNo=XXXX
+// -------------------------------------------------------------
+    @Transactional
+    @RequestMapping(value = "/meterManagement/updateMeter", method = RequestMethod.GET)
+    public String updateMeter(
+            @RequestParam(value = "cebSerialNo", required = false) String cebSerialNo,
+            Model model) {
+
+        model.addAttribute("activeSelection", "Meter Management");
+        model.addAttribute("description", "Update Meter");
+
+        if (cebSerialNo != null && !cebSerialNo.trim().isEmpty()) {
+            String serial = cebSerialNo.trim();
+            model.addAttribute("searchedCebSerialNo", serial);
+
+            try {
+                LOGGER.info("Searching meter by CEB Serial No: " + serial);
+
+                Meter meter = meterDao.getMeterByCebSerialNo(serial);
+
+                if (meter == null) {
+                    model.addAttribute("msg",
+                            "No meter found for CEB Serial No: " + serial);
+                } else {
+                    // ✅ Use entity relationship instead of meter.getId()
+                    MeterHeader meterHeader = meter.getMeterHeader();
+
+                    model.addAttribute("meter", meter);
+                    model.addAttribute("meterHeader", meterHeader);
+                }
+
+            } catch (Exception e) {
+                LOGGER.info("Error while loading meter for CEB Serial No: " + cebSerialNo
+                        + " - " + e.getMessage());
+                model.addAttribute("msg",
+                        "Error while loading meter details for CEB Serial No: " + cebSerialNo);
+            }
+        }
+
+        return "pts/licenseeBilling/meterManagement/updateMeter";
+    }
+
+
+
+
     //viewMeterReading
     @Transactional
     @RequestMapping(value = "/viewMeterReading", method = RequestMethod.GET)
@@ -350,6 +465,7 @@ public class MeterPointController {
             try{
                 excelMeterReader.extractExcelFiles(fullPath, billCycle);
                 meterReadingList = excelMeterReader.getProcessedMeterReadings();
+
             }catch (Exception e) {
                 LOGGER.info("Error in batch processing: " + e.getMessage());
                 model.addAttribute("msg", ExceptionHandler.handleException(e));
@@ -989,8 +1105,3 @@ public class MeterPointController {
 
 
 }
-
-
-
-
-

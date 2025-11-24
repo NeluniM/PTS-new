@@ -11,9 +11,9 @@ public interface MeterProcessDao {
 
     BillCycle getCurrentBillCycle();
 
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
     //                         Meter Reading
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
 
     //basic retrievals
     List<String> getEnergyPrefixes();
@@ -30,7 +30,6 @@ public interface MeterProcessDao {
     List<MeterReading> getPreviousReading(String serialNo, Long billCycleNo);
     BigDecimal matchPreviousReading(Long measureId, List<MeterReading> readings);
 
-
     //DB write-----------------------------
     void saveMeterReading(MeterReading meterReading);
     List<MeterReading> saveMeterReadingList(List<MeterReading> meterReadingsList);
@@ -39,33 +38,29 @@ public interface MeterProcessDao {
     Measure setMeasure_relation(Long measureId);
     void lockProvinceProcess(Long billCycleNo, String licenseCode, String provinceCode);
 
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
     //                         Logging
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
 
-    //DB write-----------------------------
     MeterReadingLog saveMeterReadingLog(MeterReadingLog meterReadingLog);
     Province setProvince_relation(String provinceCode);
     DistributionLicense setLicense_relation(String licenseCode);
 
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
     //                        Error Logging
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
 
-    //DB write-----------------------------
     void saveMeterReadingLogError(MeterReadingErrLog meterReadingLogError);
     void saveMeterReadingLogErrorList(List<MeterReadingErrLog> meterReadingLogErrorList, MeterReadingLog meterReadingLog);
     MeterReadingLog setMeterReadingLog_relation(Long readingId);
 
-
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
     //                         Energy summaries
-    //--------------------------------------------------------------------------
+    //----------------------------------------------------------------------
     List<MeterReadingEnergySummary> calculateMeterReadingEnergySummary(List<MeterReadingFileModel> meterReadings, Long BillCycleNo);
     ProvinceEnergySummary calculateProvinceEnergySummary(List<MeterReadingFileModel> meterReadingsFileList, Long BillCycleNo,
                                                          String licenseCode, String provinceCode) throws ConfigException;
 
-    //DB write-----------------------------
     void saveProvinceEnergySummary(ProvinceEnergySummary totalEn);
     void saveMeterReadingEnergySummary(List<MeterReadingEnergySummary> meterReadingEn);
 
@@ -75,5 +70,10 @@ public interface MeterProcessDao {
                            List<MeterReadingEnergySummary> meterReadingEnergyList, ProvinceEnergySummary totalEnergy, Long billCycle,
                            String division, String province);
 
+    // ------------------------------------------------------------------
+    //                  Meter Management helpers
+    // ------------------------------------------------------------------
 
+    /** Fetch a Meter by its CEB Serial No (used in updateMeter controller) */
+    Meter getMeterByCebSerialNo(String cebSerialNo);
 }

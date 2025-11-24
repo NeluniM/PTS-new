@@ -170,6 +170,7 @@
                     console.log("File upload processed successfully.");
                     // Clear form after successful upload
                     form.reset();
+
                     // $('#successMsg').html("File upload processed successfully.").fadeIn();
                     //alert("Files uploaded successfully.");
 
