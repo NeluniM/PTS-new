@@ -36,8 +36,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 
-
-
 import java.io.File;
 import java.io.FileInputStream;
 
@@ -79,10 +77,7 @@ public class MeterPointController {
     @PersistenceContext
     private EntityManager entityManager;
 
-
     private static final Logger LOGGER = Logger.getLogger(MeterPointController.class);
-
-
 
     //-----------------------------------------------------------------------------
     //                  Initial page Views
@@ -100,8 +95,6 @@ public class MeterPointController {
         model.addAttribute("billCycleNo", billCycle.getBillCycleNo());
         return "pts/licenseeBilling/processReading/processMeterReading"; // Return the same page after form submission
     }
-
-
 
     //meter management-1
     @Transactional
@@ -151,28 +144,95 @@ public class MeterPointController {
 
         LOGGER.info("Install New Meter form submitted with values: " + params);
 
-        // TODO: Map these params to your MeterHeader / Meter entities
-        //       and save using your DAO/repository classes.
-        //
-        // Example (pseudo):
-        // MeterHeader header = new MeterHeader();
-        // header.setBatchId(params.get("BATCH_ID"));
-        // ...
-        // meterCrudDao.saveMeterHeader(header);
-        //
-        // Meter meter = new Meter();
-        // meter.setCebSerialNo(params.get("CEB_SERIAL_NO"));
-        // ...
-        // meterCrudDao.saveMeter(meter);
+        try {
+            // -----------------------------
+            // 1) Create and populate MeterHeader
+            // -----------------------------
+            MeterHeader header = new MeterHeader();
 
-        // After saving, redirect back to meterHome
-        return "redirect:/meterManagement/meterHome";
+            // String fields
+            header.setBatchId(params.get("BATCH_ID"));
+            header.setAccuracyClass(params.get("ACCURACY_CLASS"));
+            header.setBatchNo(params.get("BATCH_NO"));
+            header.setCurrentRating(params.get("CURRENT_RATING"));
+            header.setInitiatedBy(params.get("INITIATED_BY"));
+            header.setRemark(params.get("REMARK"));
+            header.setStatus(params.get("STATUS"));
+            header.setCreatedBy(params.get("CREATED_BY"));
+            header.setUpdatedBy(params.get("UPDATED_BY"));
+
+            // Manufactured year – your install JSP uses MANUFACTURED_COUNTRY,
+            // updateMeter.jsp uses MANUFACTURED_YEAR. Prefer YEAR, fallback to COUNTRY.
+            String manuYear = params.get("MANUFACTURED_YEAR");
+            if (manuYear == null || manuYear.trim().isEmpty()) {
+                manuYear = params.get("MANUFACTURED_COUNTRY");
+            }
+            header.setManufacturedYear(manuYear);
+
+            // BigDecimal fields
+            header.setQuantity(parseBigDecimal(params.get("QUANTITY")));
+            header.setCurrentRating3(parseBigDecimal(params.get("CURRENT_RATING3")));
+            header.setManufactId(parseBigDecimal(params.get("MANUFACT_ID")));
+
+            // Date fields (java.util.Date)
+            header.setCreatedDate(parseUtilDate(params.get("CREATED_DATE")));
+            header.setUpdatedDate(parseUtilDate(params.get("UPDATED_DATE")));
+            header.setProcuredDate(parseUtilDate(params.get("PROCURED_DATE")));
+
+            // NOTE: MODEL_ID mapping to MeterModel is not done here
+            // (no DAO for MeterModel in this controller). Can be added later.
+
+            // Persist header first
+            meterCrudDao.saveMeterHeader(header);
+
+            // -----------------------------
+            // 2) Create and populate Meter
+            // -----------------------------
+            Meter meter = new Meter();
+
+            // Primary key – CEB Serial No (required)
+            String cebSerialNo = params.get("CEB_SERIAL_NO");
+            meter.setCebSerialNo(cebSerialNo);
+
+            // Other meter fields
+            meter.setCurrentRating(parseBigDecimal(params.get("MTR_CURRENT_RATING")));
+            meter.setRemark(params.get("MTR_REMARK"));
+            meter.setStatus(params.get("MTR_STATUS"));
+            meter.setUpdatedBy(params.get("MTR_UPDATED_BY"));
+            meter.setSerialNo(params.get("MTR_SERIAL_NO"));
+            meter.setCreatedBy(params.get("MTR_CREATED_BY"));
+
+            // LocalDate fields
+            meter.setCreatedDate(parseLocalDate(params.get("MTR_CREATED_DATE")));
+            meter.setModifiedDate(parseLocalDate(params.get("MTR_MODIFIED_DATE")));
+
+            // java.util.Date field
+            meter.setUpdatedDate(parseUtilDate(params.get("MTR_UPDATED_DATE")));
+
+            // link header <-> meter
+            meter.setMeterHeader(header);
+
+            // Persist meter
+            meterCrudDao.saveMeter(meter);
+
+            LOGGER.info("New Meter and MeterHeader saved successfully for CEB Serial No: " + cebSerialNo);
+
+            // After saving, redirect back to meterHome
+            return "redirect:/meterManagement/meterHome";
+
+        } catch (Exception e) {
+            LOGGER.info("Error while installing new meter: " + e.getMessage());
+            model.addAttribute("msg", "Error while saving new meter. Please check the data and try again.");
+            // Stay on the same page so user doesn't lose context
+            return "pts/licenseeBilling/meterManagement/installMeter";
+        }
     }
+
     // 4
-// -------------------------------------------------------------
-//   Meter Management - Update Meter (search by CEB Serial No)
-//   URL: /meterManagement/updateMeter?cebSerialNo=XXXX
-// -------------------------------------------------------------
+    // -------------------------------------------------------------
+    //   Meter Management - Update Meter (search by CEB Serial No)
+    //   URL: /meterManagement/updateMeter?cebSerialNo=XXXX
+    // -------------------------------------------------------------
     @Transactional
     @RequestMapping(value = "/meterManagement/updateMeter", method = RequestMethod.GET)
     public String updateMeter(
@@ -215,9 +275,9 @@ public class MeterPointController {
     }
 
     // -------------------------------------------------------------
-//   Meter Management - Update Meter (POST)
-//   URL: /meterManagement/updateMeter
-// -------------------------------------------------------------
+    //   Meter Management - Update Meter (POST)
+    //   URL: /meterManagement/updateMeter
+    // -------------------------------------------------------------
     @Transactional
     @RequestMapping(value = "/meterManagement/updateMeter", method = RequestMethod.POST)
     public String updateMeterPost(@RequestParam Map<String, String> params, Model model) {
@@ -315,7 +375,6 @@ public class MeterPointController {
         return "redirect:/meterManagement/updateMeter?cebSerialNo=" + meter.getCebSerialNo();
     }
 
-
     //viewMeterReading
     @Transactional
     @RequestMapping(value = "/viewMeterReading", method = RequestMethod.GET)
@@ -364,7 +423,6 @@ public class MeterPointController {
         model.addAttribute("licenseList",licenseList);
         return "pts/licenseeBilling/invoice/invoice"; // Return the same page after form submission
     }
-
 
     //----------------------------------------------------------------------------
     //                              API request methods
@@ -434,7 +492,6 @@ public class MeterPointController {
             // Fetch and attach energy summary (province overall)
             ProvinceEnergySummary total = meterReadingDao.getProvinceEnergySummary(billCycle, division, province);
             model.addAttribute("energySummary", total);
-
 
             try {
                 LOGGER.info("Getting details for table header");
@@ -532,17 +589,8 @@ public class MeterPointController {
             e.printStackTrace();
         }
 
-
-
         return "pts/licenseeBilling/processReading/processTable";
     }
-
-
-
-
-
-
-
 
     //process all files for a bill cycle original=========================================
     @Transactional
@@ -589,7 +637,6 @@ public class MeterPointController {
             }
             LOGGER.info("Files processing successfully");
 
-
             //save to LOG summary for batch processing------------------------------------
             MeterReadingLog mrLog = new MeterReadingLog();
             mrLog.setBillCycle(meterProcessDao.setBillCycle_relation(Long.parseLong(billCycle)));
@@ -625,7 +672,6 @@ public class MeterPointController {
             }
             LOGGER.info("Error files logged successfully");
 
-
             //MeterReading Energy Summary calculation-------------------------------
             LOGGER.info("Meter reading Energy Summary calculation started");
             List<MeterReadingEnergySummary> meterReadingEnergyList = meterProcessDao.calculateMeterReadingEnergySummary(meterReadingFileModelList, Long.parseLong(billCycle));
@@ -635,7 +681,6 @@ public class MeterPointController {
             LOGGER.info("Province Energy Summary calculation started");
             ProvinceEnergySummary totalEnergy = meterProcessDao.calculateProvinceEnergySummary(meterReadingFileModelList, Long.parseLong(billCycle), division, province);
             LOGGER.info("Province Energy Summary calculated successfully");
-
 
             //----------------------------------------
             //  DB writing
@@ -667,7 +712,6 @@ public class MeterPointController {
                 return "pts/licenseeBilling/processReading/processTable";
             }
 
-
             //returning result views--------------------------------------
             model.addAttribute("processSummary",meterProcessDao.getMeterReadingFileModelList());
             model.addAttribute("energySummary",totalEnergy);
@@ -693,7 +737,6 @@ public class MeterPointController {
             return "pts/licenseeBilling/processReading/processTable";
         }
     }
-
 
     @Transactional
     @RequestMapping(value = "/viewInvoice", method = RequestMethod.GET)
@@ -733,14 +776,6 @@ public class MeterPointController {
             return "ok";
         }
 
-        /*if(inv == null){
-            model.addAttribute("msg", "No invoice found for bill cycle " + billCycle + " :  " + division);
-            return "pts/licenseeBilling/invoice/invoiceTable";
-        }
-        if(inv.getTotalInvoiceCharge() == null){
-            model.addAttribute("msg", "No invoice found for bill cycle " + billCycle + " :  " + division);
-            return "pts/licenseeBilling/invoice/invoiceTable";
-        }*/
         model.addAttribute("billYear", bc.getBillYear());
         model.addAttribute("billMonth",
                 java.time.Month.of(bc.getBillMonth().intValue()).name().toLowerCase().substring(0, 1).toUpperCase()
@@ -1007,7 +1042,6 @@ public class MeterPointController {
             pdf = new JRPdfExporter();
             System.out.println("downloadEstimatecostCenter 4"  );
 
-
             System.out.println("text 37" );
 
             Calendar calendar = Calendar.getInstance();
@@ -1021,7 +1055,6 @@ public class MeterPointController {
             pdf.setParameter(JRPdfExporterParameter.OUTPUT_FILE_NAME,  pdfPath);
             pdf.exportReport();
             System.out.println("downloadEstimatecostCenter 5"+pdfPath );
-
 
             File pdfFile = new File( pdfPath);
             if (pdfFile.exists())
@@ -1038,28 +1071,17 @@ public class MeterPointController {
                         out.write(buffer, 0, bytesRead);
                     }
                 }
-
-
             }
         }
-
-
         catch (Exception ex)
         {
             ex.printStackTrace();
         }
-    	/*finally
-    	{
-	        System.out.println("Joboxxxxxxxxx conn.close();xxxxx dclose");
-	        if(conn!=null)
-	            conn.close();
-        }*/
-
     }
 
     // -------------------------
-// Helper parsers
-// -------------------------
+    // Helper parsers
+    // -------------------------
     private BigDecimal parseBigDecimal(String value) {
         if (value == null || value.trim().isEmpty()) return null;
         try {
