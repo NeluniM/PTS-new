@@ -8,9 +8,13 @@ import com.it.ceb.pts.repo.InvoiceDao;
 import com.it.ceb.pts.repo.MeterProcessDao;
 import com.it.ceb.pts.repo.MeterReadingDao;
 import com.it.ceb.pts.repo.ProvinceDao;
+import com.it.ceb.pts.repo.MeterDao; // ✅ NEW IMPORT
 import com.it.ceb.util.common.ExcelMeterReader;
 import com.it.ceb.util.common.ConfigProperties;
 import com.it.ceb.util.common.exceptions.ExceptionHandler;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.HttpServletResponse;
@@ -27,6 +31,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 
 
@@ -62,7 +70,15 @@ public class MeterPointController {
     @Autowired
     private InvoiceDao invoiceDao;
     @Autowired
-    private MeterProcessDao meterDao;
+    private MeterProcessDao meterDao; // ⬅️ keep as-is (used in processFilesTest)
+
+    // ✅ NEW: JPA DAO for Meter + MeterHeader CRUD
+    @Autowired
+    private MeterDao meterCrudDao;
+
+    @PersistenceContext
+    private EntityManager entityManager;
+
 
     private static final Logger LOGGER = Logger.getLogger(MeterPointController.class);
 
@@ -128,7 +144,7 @@ public class MeterPointController {
         return "pts/licenseeBilling/meterManagement/installMeter";
     }
 
-    // ✅ NEW: handles form POST from installMeter.jsp (form action="installMeter")
+    // ✅ handles form POST from installMeter.jsp (form action="installMeter")
     @Transactional
     @RequestMapping(value = "/installMeter", method = RequestMethod.POST)
     public String saveInstallMeter(@RequestParam Map<String, String> params, Model model) {
@@ -142,12 +158,12 @@ public class MeterPointController {
         // MeterHeader header = new MeterHeader();
         // header.setBatchId(params.get("BATCH_ID"));
         // ...
-        // meterDao.saveMeterHeader(header);
+        // meterCrudDao.saveMeterHeader(header);
         //
         // Meter meter = new Meter();
         // meter.setCebSerialNo(params.get("CEB_SERIAL_NO"));
         // ...
-        // meterDao.saveMeter(meter);
+        // meterCrudDao.saveMeter(meter);
 
         // After saving, redirect back to meterHome
         return "redirect:/meterManagement/meterHome";
@@ -173,7 +189,8 @@ public class MeterPointController {
             try {
                 LOGGER.info("Searching meter by CEB Serial No: " + serial);
 
-                Meter meter = meterDao.getMeterByCebSerialNo(serial);
+                // ✅ Use JPA MeterDao for lookup
+                Meter meter = meterCrudDao.getMeterByCebSerialNo(serial);
 
                 if (meter == null) {
                     model.addAttribute("msg",
@@ -197,7 +214,106 @@ public class MeterPointController {
         return "pts/licenseeBilling/meterManagement/updateMeter";
     }
 
+    // -------------------------------------------------------------
+//   Meter Management - Update Meter (POST)
+//   URL: /meterManagement/updateMeter
+// -------------------------------------------------------------
+    @Transactional
+    @RequestMapping(value = "/meterManagement/updateMeter", method = RequestMethod.POST)
+    public String updateMeterPost(@RequestParam Map<String, String> params, Model model) {
 
+        LOGGER.info("Update Meter POST called with params: " + params);
+
+        // 1) Identify the meter to update
+        String cebSerialNo = params.get("METER_ID");
+        if (cebSerialNo == null || cebSerialNo.trim().isEmpty()) {
+            cebSerialNo = params.get("CEB_SERIAL_NO");
+        }
+
+        if (cebSerialNo == null || cebSerialNo.trim().isEmpty()) {
+            model.addAttribute("msg", "Missing meter id to update.");
+            return "redirect:/meterManagement/updateMeter";
+        }
+
+        // ✅ Load via JPA MeterDao
+        Meter meter = meterCrudDao.getMeterByCebSerialNo(cebSerialNo.trim());
+        if (meter == null) {
+            model.addAttribute("msg", "No meter found for CEB Serial No: " + cebSerialNo);
+            return "redirect:/meterManagement/updateMeter";
+        }
+
+        MeterHeader header = meter.getMeterHeader();
+        if (header == null) {
+            model.addAttribute("msg", "No meter header found for CEB Serial No: " + cebSerialNo);
+            return "redirect:/meterManagement/updateMeter";
+        }
+
+        // -------------------------
+        // 2) Update METER_HEADER
+        // -------------------------
+
+        // String fields
+        String batchId = params.get("BATCH_ID");
+        if (batchId != null && !batchId.trim().isEmpty()) {
+            header.setBatchId(batchId.trim());
+        }
+
+        header.setAccuracyClass(params.get("ACCURACY_CLASS"));
+        header.setBatchNo(params.get("BATCH_NO"));
+        header.setCreatedBy(params.get("CREATED_BY"));
+        header.setCurrentRating(params.get("CURRENT_RATING"));
+        header.setInitiatedBy(params.get("INITIATED_BY"));
+        header.setManufacturedYear(params.get("MANUFACTURED_YEAR")); // from JSP
+        header.setRemark(params.get("REMARK"));
+        header.setStatus(params.get("STATUS"));
+        header.setUpdatedBy(params.get("UPDATED_BY"));
+
+        // BigDecimal fields
+        header.setQuantity(parseBigDecimal(params.get("QUANTITY")));
+        header.setCurrentRating3(parseBigDecimal(params.get("CURRENT_RATING3")));
+        header.setManufactId(parseBigDecimal(params.get("MANUFACT_ID")));
+
+        // Date fields (java.util.Date)
+        header.setCreatedDate(parseUtilDate(params.get("CREATED_DATE")));
+        header.setUpdatedDate(parseUtilDate(params.get("UPDATED_DATE")));
+        header.setProcuredDate(parseUtilDate(params.get("PROCURED_DATE")));
+
+        // NOTE: MODEL_ID mapping to MeterModel is skipped here (no DAO shown).
+        // If needed later, we can fetch MeterModel and set header.setMeterModel(...).
+
+        // -------------------------
+        // 3) Update METER
+        // -------------------------
+
+        // We DO NOT change primary key (CEB_SERIAL_NO) to avoid DB issues.
+        // Text box CEBSERIAL is just for display now.
+
+        meter.setCurrentRating(parseBigDecimal(params.get("MTR_CURRENT_RATING")));
+        meter.setRemark(params.get("MTR_REMARK"));
+        meter.setStatus(params.get("MTR_STATUS"));
+        meter.setUpdatedBy(params.get("MTR_UPDATED_BY"));
+        meter.setSerialNo(params.get("MTR_SERIAL_NO"));
+        meter.setCreatedBy(params.get("MTR_CREATED_BY"));
+
+        // LocalDate fields
+        meter.setCreatedDate(parseLocalDate(params.get("MTR_CREATED_DATE")));
+        meter.setModifiedDate(parseLocalDate(params.get("MTR_MODIFIED_DATE")));
+
+        // java.util.Date field
+        meter.setUpdatedDate(parseUtilDate(params.get("MTR_UPDATED_DATE")));
+
+        // header <-> meter relation stays the same
+        meter.setMeterHeader(header);
+
+        LOGGER.info("Meter and MeterHeader updated in memory for CEB Serial No: " + cebSerialNo);
+
+        // ✅ Persist updates using JPA DAO
+        meterCrudDao.saveMeterHeader(header);
+        meterCrudDao.saveMeter(meter);
+
+        // Finally, redirect back to the same page, showing updated data.
+        return "redirect:/meterManagement/updateMeter?cebSerialNo=" + meter.getCebSerialNo();
+    }
 
 
     //viewMeterReading
@@ -798,88 +914,6 @@ public class MeterPointController {
         }
     }
 
-    /*@Transactional
-    @RequestMapping(value = "/printInv", method = RequestMethod.GET)
-    @ResponseBody
-    public void printInvoice(
-            @RequestParam("billCycle") String billCycle,
-            @RequestParam("division") String division,
-            HttpServletResponse response) {
-        Connection conn = null;
-        LOGGER.info("calling printInvoice");
-        try {
-            // Establish database connection
-            Class.forName("oracle.jdbc.driver.OracleDriver");
-            conn = DriverManager.getConnection(
-                    "jdbc:oracle:thin:@10.128.0.56:1521:hqorad1",
-                    "pstdb",
-                    "devPSTDB"
-            );
-
-            LOGGER.info("bill cycle "+Long.parseLong(billCycle));
-            LOGGER.info("division "+division);
-            // Set up parameters
-            Map<String, Object> parameters = new HashMap<>();
-            parameters.put("@billCycle", Long.parseLong(billCycle));
-            parameters.put("LicenseCode", division);
-
-            // Compile and fill sub-report first
-            String reportPath = ConfigProperties.getReportPath() ;
-            String reportFile = reportPath+"Bulk_Bill_Licence_H.jrxml";
-            LOGGER.info("reportPath "+reportPath);
-            LOGGER.info("reportFile "+reportFile);
-            //JasperReport jasperReport = JasperCompileManager.compileReport(getClass().getResourceAsStream(reportFile));
-            JasperReport jasperReport = JasperCompileManager.compileReport(reportFile);
-
-
-            // Compile and fill main report
-
-            //JasperReport mainReport = JasperCompileManager.compileReport(mainPath);
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, conn);
-
-            String reportPdfName = reportPath+"Invoice_"+billCycle+".pdf";
-            // Export to PDF
-            //response.setContentType("application/pdf");
-            //response.setHeader("Content-Disposition", "attachment; filename=\"" + reportOutName  + ".pdf\"");
-
-            JRPdfExporter exporter = new JRPdfExporter();
-            exporter.setParameter(JRPdfExporterParameter.CHARACTER_ENCODING, "UTF-8");
-            exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
-            exporter.setParameter(JRPdfExporterParameter.OUTPUT_FILE_NAME, reportPdfName);
-            //exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, response.getOutputStream());
-            exporter.exportReport();
-
-            try {
-                response.setContentType("application/pdf");
-                //response.addHeader("Content-Disposition", "attachment; filename="+pdfPath);
-                response.setHeader("Content-Disposition", "attachment; filename=\"" + reportPdfName  + ".pdf\"");
-
-                InputStream inputStream = new FileInputStream(new File( reportPdfName)); //load the file
-                IOUtils.copy(inputStream, response.getOutputStream());
-                response.flushBuffer();
-                LOGGER.info("pdfPath" +reportPdfName );
-
-            } catch (FileNotFoundException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-
-        } catch (Exception e) {
-           e.printStackTrace();
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.close();
-                } catch (Exception e) {
-                    LOGGER.info(e.getMessage());
-                }
-            }
-        }
-    }*/
-
     public void generateReportPDF (HttpServletResponse resp, Map parameters, JasperReport jasperReport, Connection conn)throws Exception {
         byte[] bytes = null;
         bytes = JasperRunManager.runReportToPdf(jasperReport,parameters,conn);
@@ -1022,86 +1056,40 @@ public class MeterPointController {
         }*/
 
     }
-    /*
-    @Transactional
-    @RequestMapping(value = "/printInv", method = RequestMethod.GET)
-    @ResponseBody
-    public void printInvoice(
-            @RequestParam("billCycle") String billCycle,
-            @RequestParam("division") String division,
-            HttpServletResponse response) {
-		Connection conn = null;
-		boolean canPrint = false;
 
-		try
-		{
-			conn = getReportDbConnection();
-			LOGGER.info("create conn printInvoicePaidCopy");
+    // -------------------------
+// Helper parsers
+// -------------------------
+    private BigDecimal parseBigDecimal(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            return new BigDecimal(value.trim());
+        } catch (NumberFormatException e) {
+            LOGGER.info("Invalid BigDecimal value: '" + value + "'");
+            return null;
+        }
+    }
 
-			Map<String, Object> parameters = new HashMap<>();
-            parameters.put("@billCycle", Long.parseLong(billCycle));
-            parameters.put("LicenseCode", division);
+    private Date parseUtilDate(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd");
+            df.setLenient(false);
+            return df.parse(value.trim());
+        } catch (Exception e) {
+            LOGGER.info("Invalid Date value (yyyy-MM-dd expected): '" + value + "'");
+            return null;
+        }
+    }
 
-			String REPORT_DIRECTORY = ConfigProperties.getReportPath() ;
-			LOGGER.info("REPORT_DIRECTORY"+REPORT_DIRECTORY);
-
-			//gg
-			String jrxmlFile = REPORT_DIRECTORY+"Bulk_Bill_Licence_H.jrxml";
-			String jasperFile = REPORT_DIRECTORY+"Bulk_Bill_Licence_H.jasper";
-			LOGGER.info("jrxmlFile"+jrxmlFile);
-
-			JasperReport jasperReport = getCompiledFile(jrxmlFile,jasperFile);
-			generateReportPDF(response, parameters, jasperReport, conn);
-
-			conn.close();
-			LOGGER.info("close conn printInvoicePaidCopy");
-
-
-
-		}
-		catch (Exception sqlExp)
-		{
-			sqlExp.printStackTrace();
-		} finally
-		{
-			if (conn != null)
-			{
-				try
-				{
-					conn.close();
-					conn = null;
-					LOGGER.info("close conn printInvoicePaidCopy finally");
-				}
-				catch (SQLException e)
-				{
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-
-			}
-
-		}
-
-	}
-    ****/
-
-
-    /*
-    @GetMapping("/printInv")
-    public ResponseEntity<byte[]> printInvoice(@RequestParam String division, @RequestParam String billCycle) throws IOException {
-        // Load or generate the PDF
-        byte[] pdfBytes = ...;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_PDF);
-        headers.setContentDispositionFormData("inline", "invoice.pdf");
-
-        return ResponseEntity.ok()
-                .headers(headers)
-                .body(pdfBytes);
-    }*/
-
-
-
+    private LocalDate parseLocalDate(String value) {
+        if (value == null || value.trim().isEmpty()) return null;
+        try {
+            return LocalDate.parse(value.trim(), DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+        } catch (DateTimeParseException e) {
+            LOGGER.info("Invalid LocalDate value (yyyy-MM-dd expected): '" + value + "'");
+            return null;
+        }
+    }
 
 }

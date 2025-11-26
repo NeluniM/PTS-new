@@ -35,7 +35,7 @@
             margin: 30px auto;
         }
 
-        /* NEW: yellow header style for Search/Meter Header/Meter Details */
+        /* yellow header style for Search / Meter Header / Meter Details */
         .meter-section-header {
             background-color: #ffd800 !important;
             color: #000 !important;
@@ -101,7 +101,7 @@
             <form action="meterManagement/updateMeter" method="post">
 
                 <!-- hidden IDs -->
-                <input type="hidden" name="HEADER_ID" value="${meterHeader.id}" />
+                <input type="hidden" name="HEADER_ID" value="${meterHeader.batchId}" />
                 <input type="hidden" name="METER_ID" value="${meter.cebSerialNo}" />
 
                 <!-- ========================= CARD 1: METER HEADER DETAILS ========================= -->
@@ -149,7 +149,7 @@
                                        step="0.01"
                                        class="form-control"
                                        name="CURRENT_RATING3"
-                                       value="${meterHeader.currentRatingNum}">
+                                       value="${meterHeader.currentRating3}">
                             </div>
 
                             <div class="col-md-6">
@@ -167,8 +167,8 @@
                                 <label>Manufactured Year</label>
                                 <input type="text"
                                        class="form-control"
-                                       name="MANUFACTURED_COUNTRY"
-                                       value="${meterHeader.manufacturedCountry}">
+                                       name="MANUFACTURED_YEAR"
+                                       value="${meterHeader.manufacturedYear}">
                             </div>
 
                             <div class="col-md-6">
@@ -244,7 +244,7 @@
                                 <input type="number"
                                        class="form-control"
                                        name="MODEL_ID"
-                                       value="${meterHeader.modelId}">
+                                       value="${meterHeader.meterModel != null ? meterHeader.meterModel.id : ''}">
                             </div>
                         </div>
 
@@ -255,7 +255,7 @@
                                 <input type="text"
                                        class="form-control"
                                        name="CURRENT_RATING"
-                                       value="${meterHeader.currentRatingText}">
+                                       value="${meterHeader.currentRating}">
                             </div>
 
                             <div class="col-md-6">
@@ -343,6 +343,7 @@
                                 <label>Meter Status</label>
                                 <select class="form-control" name="MTR_STATUS">
                                     <option value="AVL" ${meter.status == 'AVL' ? 'selected' : ''}>AVL</option>
+                                    <option value="NA"  ${meter.status == 'NA'  ? 'selected' : ''}>NA</option>
                                 </select>
                             </div>
 
@@ -401,7 +402,7 @@
                     <button type="submit"
                             class="btn"
                             style="background-color:#7D0000; border-color:#7D0000; color:#fff;">
-                       Update
+                        Update
                     </button>
                 </div>
 
