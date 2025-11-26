@@ -244,8 +244,9 @@
                                 <input type="number"
                                        class="form-control"
                                        name="MODEL_ID"
-                                       value="${meterHeader.meterModel != null ? meterHeader.meterModel.id : ''}">
+                                       value="${meterHeader.meterModel.modelId}">
                             </div>
+
                         </div>
 
                         <!-- Row 8 -->
