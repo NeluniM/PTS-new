@@ -9,6 +9,7 @@ import com.it.ceb.pts.repo.MeterProcessDao;
 import com.it.ceb.pts.repo.MeterReadingDao;
 import com.it.ceb.pts.repo.ProvinceDao;
 import com.it.ceb.pts.repo.MeterDao; // ✅ NEW IMPORT
+
 import com.it.ceb.util.common.ExcelMeterReader;
 import com.it.ceb.util.common.ConfigProperties;
 import com.it.ceb.util.common.exceptions.ExceptionHandler;
@@ -83,6 +84,33 @@ public class MeterPointController {
     //                  Initial page Views
     //-----------------------------------------------------------------------------
 
+    private String generateCebSerial() {
+
+        // 1. Get last CEB serial from DB
+        String last = meterCrudDao.getLastCebSerialNo();
+
+        int year = LocalDate.now().getYear() % 100;  // 2025 -> 25
+
+        if (last == null || last.trim().isEmpty()) {
+            // first meter
+            return String.format("TRM/METER/%02d/%05d", year, 1);
+        }
+
+        try {
+            // Extract numeric end part → last 5 digits
+            String[] parts = last.split("/");
+            int lastNumber = Integer.parseInt(parts[3]); // 00045 → 45
+
+            int next = lastNumber + 1;
+
+            return String.format("TRM/METER/%02d/%05d", year, next);
+
+        } catch (Exception e) {
+            return String.format("TRM/METER/%02d/%05d", year, 1);
+        }
+    }
+
+
     //processMeterReading
     @Transactional
     @RequestMapping(value = "/processMeterReading", method = RequestMethod.GET)
@@ -138,22 +166,36 @@ public class MeterPointController {
     }
 
     // ✅ handles form POST from installMeter.jsp (form action="installMeter")
+    // ======================================================
+//   INSTALL NEW METER — HEADER ONLY (CLEAN VERSION)
+// ======================================================
     @Transactional
     @RequestMapping(value = "/installMeter", method = RequestMethod.POST)
-    public String saveInstallMeter(@RequestParam Map<String, String> params, Model model) {
+    public String saveInstallMeter(
+            @RequestParam Map<String, String> params,
+            @RequestParam(name = "serials[]", required = false) List<String> serials,
+            Model model) {
 
-        LOGGER.info("Install New Meter form submitted with values: " + params);
+        LOGGER.info("Install New Meter submitted. Params = " + params);
 
         try {
-            // -----------------------------
-            // 1) Create and populate MeterHeader
-            // -----------------------------
+            // ================================
+            // 1) CREATE & SAVE METER HEADER
+            // ================================
             MeterHeader header = new MeterHeader();
 
-            // String fields
-            header.setBatchId(params.get("BATCH_ID"));
+            String batchId = generateBatchId();
+            header.setBatchId(batchId);
+
+            // Header fields
+            String manuYear = params.get("MANUFACTURED_COUNTRY");
+            header.setManufacturedYear(manuYear);
+
+            header.setQuantity(parseBigDecimal(params.get("QUANTITY")));
+            header.setCurrentRating3(parseBigDecimal(params.get("CURRENT_RATING3")));
+            header.setManufactId(parseBigDecimal(params.get("MANUFACT_ID")));
+
             header.setAccuracyClass(params.get("ACCURACY_CLASS"));
-            header.setBatchNo(params.get("BATCH_NO"));
             header.setCurrentRating(params.get("CURRENT_RATING"));
             header.setInitiatedBy(params.get("INITIATED_BY"));
             header.setRemark(params.get("REMARK"));
@@ -161,73 +203,59 @@ public class MeterPointController {
             header.setCreatedBy(params.get("CREATED_BY"));
             header.setUpdatedBy(params.get("UPDATED_BY"));
 
-            // Manufactured year – your install JSP uses MANUFACTURED_COUNTRY,
-            // updateMeter.jsp uses MANUFACTURED_YEAR. Prefer YEAR, fallback to COUNTRY.
-            String manuYear = params.get("MANUFACTURED_YEAR");
-            if (manuYear == null || manuYear.trim().isEmpty()) {
-                manuYear = params.get("MANUFACTURED_COUNTRY");
-            }
-            header.setManufacturedYear(manuYear);
-
-            // BigDecimal fields
-            header.setQuantity(parseBigDecimal(params.get("QUANTITY")));
-            header.setCurrentRating3(parseBigDecimal(params.get("CURRENT_RATING3")));
-            header.setManufactId(parseBigDecimal(params.get("MANUFACT_ID")));
-
-            // Date fields (java.util.Date)
             header.setCreatedDate(parseUtilDate(params.get("CREATED_DATE")));
             header.setUpdatedDate(parseUtilDate(params.get("UPDATED_DATE")));
             header.setProcuredDate(parseUtilDate(params.get("PROCURED_DATE")));
 
-            // NOTE: MODEL_ID mapping to MeterModel is not done here
-            // (no DAO for MeterModel in this controller). Can be added later.
-
-            // Persist header first
             meterCrudDao.saveMeterHeader(header);
+            LOGGER.info("MeterHeader created: BatchId = " + batchId);
 
-            // -----------------------------
-            // 2) Create and populate Meter
-            // -----------------------------
-            Meter meter = new Meter();
+            // ================================
+            // 2) SAVE MULTIPLE METERS
+            // ================================
+            String lastSerial = meterCrudDao.getLastCebSerialNo();
+            int year = LocalDate.now().getYear() % 100;
 
-            // Primary key – CEB Serial No (required)
-            String cebSerialNo = params.get("CEB_SERIAL_NO");
-            meter.setCebSerialNo(cebSerialNo);
+            int nextNumber = 1;
+            if (lastSerial != null) {
+                String[] parts = lastSerial.split("/");
+                nextNumber = Integer.parseInt(parts[3]) + 1;
+            }
 
-            // Other meter fields
-            meter.setCurrentRating(parseBigDecimal(params.get("MTR_CURRENT_RATING")));
-            meter.setRemark(params.get("MTR_REMARK"));
-            meter.setStatus(params.get("MTR_STATUS"));
-            meter.setUpdatedBy(params.get("MTR_UPDATED_BY"));
-            meter.setSerialNo(params.get("MTR_SERIAL_NO"));
-            meter.setCreatedBy(params.get("MTR_CREATED_BY"));
 
-            // LocalDate fields
-            meter.setCreatedDate(parseLocalDate(params.get("MTR_CREATED_DATE")));
-            meter.setModifiedDate(parseLocalDate(params.get("MTR_MODIFIED_DATE")));
+            if (serials == null || serials.isEmpty()) {
+                LOGGER.info("No serial numbers submitted.");
+            } else {
+                for (String s : serials) {
 
-            // java.util.Date field
-            meter.setUpdatedDate(parseUtilDate(params.get("MTR_UPDATED_DATE")));
+                    Meter meter = new Meter();
+                    meter.setMeterHeader(header);
 
-            // link header <-> meter
-            meter.setMeterHeader(header);
+                    // AUTO-GENERATE UNIQUE SERIAL
+                    String cebSerial = String.format("TRM/METER/%02d/%05d", year, nextNumber++);
+                    meter.setCebSerialNo(cebSerial);
 
-            // Persist meter
-            meterCrudDao.saveMeter(meter);
+                    meter.setSerialNo(s == null ? null : s.trim());
+                    meter.setStatus("AVL");
+                    meter.setCreatedBy(params.get("CREATED_BY"));
+                    meter.setUpdatedBy("SYSTEM");
+                    meter.setCreatedDate(LocalDate.now());
+                    meter.setUpdatedDate(new Date());
 
-            LOGGER.info("New Meter and MeterHeader saved successfully for CEB Serial No: " + cebSerialNo);
+                    meterCrudDao.saveMeter(meter);
+                }
 
-            // After saving, redirect back to meterHome
+
+            }
+
             return "redirect:/meterManagement/meterHome";
 
         } catch (Exception e) {
-            LOGGER.info("Error while installing new meter: " + e.getMessage());
-            model.addAttribute("msg", "Error while saving new meter. Please check the data and try again.");
-            // Stay on the same page so user doesn't lose context
+            LOGGER.error("Error saving meter batch", e);
+            model.addAttribute("msg", "Error saving meters.");
             return "pts/licenseeBilling/meterManagement/installMeter";
         }
     }
-
     // 4
     // -------------------------------------------------------------
     //   Meter Management - Update Meter (search by CEB Serial No)
@@ -332,6 +360,7 @@ public class MeterPointController {
         header.setQuantity(parseBigDecimal(params.get("QUANTITY")));
         header.setCurrentRating3(parseBigDecimal(params.get("CURRENT_RATING3")));
         header.setManufactId(parseBigDecimal(params.get("MANUFACT_ID")));
+
 
         // Date fields (java.util.Date)
         header.setCreatedDate(parseUtilDate(params.get("CREATED_DATE")));
@@ -1079,6 +1108,21 @@ public class MeterPointController {
         }
     }
 
+    // ===============================================
+//  Meter Management – Meter Points (NEW PAGE)
+//  URL: /meterManagement/meterPointNew
+// ===============================================
+    @Transactional
+    @RequestMapping(value = "/meterManagement/meterPointNew", method = RequestMethod.GET)
+    public String meterPointNew(Model model) {
+
+        model.addAttribute("activeSelection", "Meter Management");
+        model.addAttribute("description", "Meter Points");
+
+        return "pts/licenseeBilling/meterManagement/meterPointNew";
+    }
+
+
     // -------------------------
     // Helper parsers
     // -------------------------
@@ -1113,5 +1157,12 @@ public class MeterPointController {
             return null;
         }
     }
+
+    private String generateBatchId() {
+        int year = LocalDate.now().getYear();
+        long count = meterCrudDao.getMeterHeaderCountForYear(year) + 1;
+        return String.format("TRM/BATCH/%d/%04d", year, count);
+    }
+
 
 }
