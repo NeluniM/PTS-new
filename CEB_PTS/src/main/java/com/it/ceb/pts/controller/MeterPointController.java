@@ -187,14 +187,10 @@ public class MeterPointController {
             String batchId = generateBatchId();
             header.setBatchId(batchId);
 
-            // Header fields
-            String manuYear = params.get("MANUFACTURED_COUNTRY");
-            header.setManufacturedYear(manuYear);
-
+            header.setManufacturedYear(params.get("MANUFACTURED_COUNTRY"));
             header.setQuantity(parseBigDecimal(params.get("QUANTITY")));
             header.setCurrentRating3(parseBigDecimal(params.get("CURRENT_RATING3")));
             header.setManufactId(parseBigDecimal(params.get("MANUFACT_ID")));
-
             header.setAccuracyClass(params.get("ACCURACY_CLASS"));
             header.setCurrentRating(params.get("CURRENT_RATING"));
             header.setInitiatedBy(params.get("INITIATED_BY"));
@@ -202,39 +198,32 @@ public class MeterPointController {
             header.setStatus(params.get("STATUS"));
             header.setCreatedBy(params.get("CREATED_BY"));
             header.setUpdatedBy(params.get("UPDATED_BY"));
-
             header.setCreatedDate(parseUtilDate(params.get("CREATED_DATE")));
             header.setUpdatedDate(parseUtilDate(params.get("UPDATED_DATE")));
             header.setProcuredDate(parseUtilDate(params.get("PROCURED_DATE")));
 
             meterCrudDao.saveMeterHeader(header);
-            LOGGER.info("MeterHeader created: BatchId = " + batchId);
 
             // ================================
-            // 2) SAVE MULTIPLE METERS
+            // 2) SAVE MULTIPLE METERS ✅
             // ================================
-            String lastSerial = meterCrudDao.getLastCebSerialNo();
             int year = LocalDate.now().getYear() % 100;
 
-            int nextNumber = 1;
-            if (lastSerial != null) {
-                String[] parts = lastSerial.split("/");
-                nextNumber = Integer.parseInt(parts[3]) + 1;
-            }
-
-
-            if (serials == null || serials.isEmpty()) {
-                LOGGER.info("No serial numbers submitted.");
-            } else {
+            if (serials != null) {
                 for (String s : serials) {
+
+                    int nextNo = meterCrudDao
+                            .getNextCebSerialNumberForYear(String.format("%02d", year));
+
+                    String cebSerial = String.format(
+                            "TRM/METER/%02d/%05d",
+                            year,
+                            nextNo
+                    );
 
                     Meter meter = new Meter();
                     meter.setMeterHeader(header);
-
-                    // AUTO-GENERATE UNIQUE SERIAL
-                    String cebSerial = String.format("TRM/METER/%02d/%05d", year, nextNumber++);
                     meter.setCebSerialNo(cebSerial);
-
                     meter.setSerialNo(s == null ? null : s.trim());
                     meter.setStatus("AVL");
                     meter.setCreatedBy(params.get("CREATED_BY"));
@@ -244,11 +233,10 @@ public class MeterPointController {
 
                     meterCrudDao.saveMeter(meter);
                 }
-
-
             }
 
-            return "redirect:/meterManagement/meterHome";
+            // ✅ RETURN INSIDE TRY
+            return "redirect:/meterManagement";
 
         } catch (Exception e) {
             LOGGER.error("Error saving meter batch", e);
@@ -256,6 +244,8 @@ public class MeterPointController {
             return "pts/licenseeBilling/meterManagement/installMeter";
         }
     }
+
+
     // 4
     // -------------------------------------------------------------
     //   Meter Management - Update Meter (search by CEB Serial No)
@@ -1159,10 +1149,11 @@ public class MeterPointController {
     }
 
     private String generateBatchId() {
-        int year = LocalDate.now().getYear();
+        int year = LocalDate.now().getYear() % 100; // 🔥 THIS IS THE FIX
         long count = meterCrudDao.getMeterHeaderCountForYear(year) + 1;
-        return String.format("TRM/BATCH/%d/%04d", year, count);
+        return String.format("TRM/BATCH/%02d/%04d", year, count);
     }
+
 
 
 }

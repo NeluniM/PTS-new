@@ -41,6 +41,8 @@
             opacity: 1 !important;
             cursor: not-allowed !important;
         }
+
+
     </style>
 </head>
 
@@ -60,8 +62,9 @@
         <form action="installMeter" method="post">
 
             <!-- ========================= METER HEADER ONLY ========================= -->
-            <div class="card mt-3">
-                <div class="card-header">
+            <div class="card mt-3" id="meterHeaderWrapper">
+
+            <div class="card-header">
                     <h5 class="mb-0">Meter Header Details</h5>
                 </div>
 
@@ -149,14 +152,12 @@
             </div>
 
             <!-- ================= BUTTONS ================= -->
-            <div class="d-flex justify-content-end mt-4 mb-4">
-                <button type="button" id="showTableBtn" class="btn btn-save-red" style="margin-right:12px;">
+            <div class="d-flex justify-content-end mt-4 mb-4" id="meterActionButtons">
+
+            <button type="button" id="showTableBtn" class="btn btn-save-red" style="margin-right:12px;">
                     Add Meters
                 </button>
 
-                <button type="button" id="removeMetersBtn" class="btn btn-save-red">
-                    Remove Meters
-                </button>
             </div>
 
             <!-- ================= ADD METER TABLE ================= -->
@@ -183,28 +184,8 @@
                 </div>
             </div>
 
-            <!-- ================= REMOVE METER SECTION ================= -->
-            <div id="removeMeterWrapper" class="card mt-4" style="display:none;">
-                <div class="card-header">
-                    <h5 class="mb-0">Remove Meter</h5>
-                </div>
 
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <label>Meter Serial Number</label>
-                            <input type="text" class="form-control"
-                                   placeholder="Enter Meter Serial Number">
-                        </div>
 
-                        <div class="col-md-6 d-flex align-items-end">
-                            <button type="button" class="btn btn-save-red">
-                                Search
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
         </form>
     </div>
@@ -213,15 +194,42 @@
 <jsp:include page="../../common/footer.jsp" />
 
 <script>
-    $("#showTableBtn").on("click", function () {
-        $("#removeMeterWrapper").hide();
-        $("#serialTableWrapper").slideDown();
-        addRow();
+
+    $("#manufacturerSelect").on("change", function () {
+        let id = $(this).val();
+
+        // set hidden manufacturer id
+        $("#manufacturerHidden").val(id);
+
+        // reset model
+        $("#modelSelect").val("");
+        $("#modelHidden").val("");
+
+        // filter models by manufacturer
+        $("#modelSelect option").each(function () {
+            let m = $(this).data("manufact");
+            if (!m || m == id) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
     });
 
-    $("#removeMetersBtn").on("click", function () {
-        $("#serialTableWrapper").hide();
-        $("#removeMeterWrapper").slideDown();
+    $("#modelSelect").on("change", function () {
+        $("#modelHidden").val($(this).val());
+    });
+
+    $("#showTableBtn").on("click", function () {
+
+        // exit remove mode
+        $("body").removeClass("remove-mode");
+
+        $("#removeMeterWrapper").hide();
+        $("#meterHeaderWrapper").show();
+        $("#serialTableWrapper").slideDown();
+
+        addRow();
     });
 
     $("#addRowBtn").on("click", function () {
@@ -232,29 +240,30 @@
         $("#serialTable tbody").append(`
             <tr>
                 <td>
-                    <input type="text" name="serials[]" class="form-control"
-                           placeholder="Leave empty to auto-generate">
+                    <input type="text" name="serials[]" class="form-control">
                 </td>
             </tr>
         `);
     }
-
-    $("#manufacturerSelect").on("change", function () {
-        let id = $(this).val();
-        $("#manufacturerHidden").val(id);
-        $("#modelSelect").val("");
-        $("#modelHidden").val("");
-
-        $("#modelSelect option").each(function () {
-            let m = $(this).data("manufact");
-            if (!m || m == id) $(this).show(); else $(this).hide();
-        });
-    });
-
-    $("#modelSelect").on("change", function () {
-        $("#modelHidden").val($(this).val());
-    });
 </script>
+
+<script>
+
+    function setPageTitle(text) {
+        $("h4, h5, .page-title").each(function () {
+            if ($(this).text().trim() === "Install New Meter") {
+                $(this).text(text);
+            }
+        });
+    }
+
+
+    $("#showTableBtn").on("click", function () {
+        setPageTitle("Install New Meter");
+    });
+
+</script>
+
 
 </body>
 </html>

@@ -53,7 +53,7 @@
     <!-- ======== ONLY THIS CONTENT CHANGED ======== -->
     <div class="container mt-4">
         <p style="font-size: 15px; margin-bottom: 10px;">
-            <a href="meterManagement/meterHome" style="text-decoration: none; color: black;">Meter</a>
+            <a href="meterManagement/installMeter" style="text-decoration: none; color: black;">Meter</a>
         </p>
 
         <p style="font-size: 15px; margin-bottom: 10px;">

@@ -91,11 +91,6 @@
                 Install New Meter
             </button>
 
-            <button type="button" class="btn btn-secondary"
-                    onclick="window.location.href='meterManagement/updateMeter'">
-
-                    Update Meter
-            </button>
 
         </div>
 

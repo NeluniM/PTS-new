@@ -9,6 +9,7 @@ import org.jboss.logging.Logger;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Date;
 import java.util.List;
 
 @Repository
@@ -19,6 +20,9 @@ public class MeterDaoImpl implements MeterDao {
     @PersistenceContext
     private EntityManager entityManager;
 
+    // ---------------------------------------------------------
+    //  SEARCH BY CEB SERIAL NO
+    // ---------------------------------------------------------
     @Override
     public Meter getMeterByCebSerialNo(String cebSerialNo) {
         try {
@@ -34,6 +38,27 @@ public class MeterDaoImpl implements MeterDao {
         }
     }
 
+    // ---------------------------------------------------------
+    //  SEARCH BY PHYSICAL SERIAL NO
+    // ---------------------------------------------------------
+    @Override
+    public Meter getMeterBySerialNo(String serialNo) {
+        try {
+            return entityManager.createQuery(
+                            "SELECT m FROM Meter m WHERE m.serialNo = :serialNo",
+                            Meter.class
+                    )
+                    .setParameter("serialNo", serialNo)
+                    .getSingleResult();
+        } catch (Exception e) {
+            LOGGER.info("Meter not found for Serial No: " + serialNo);
+            return null;
+        }
+    }
+
+    // ---------------------------------------------------------
+    //  SAVE METER
+    // ---------------------------------------------------------
     @Override
     @Transactional
     public void saveMeter(Meter meter) {
@@ -42,6 +67,9 @@ public class MeterDaoImpl implements MeterDao {
         }
     }
 
+    // ---------------------------------------------------------
+    //  SAVE METER HEADER
+    // ---------------------------------------------------------
     @Override
     @Transactional
     public void saveMeterHeader(MeterHeader header) {
@@ -50,6 +78,31 @@ public class MeterDaoImpl implements MeterDao {
         }
     }
 
+    // ---------------------------------------------------------
+    //  SOFT DELETE BY SERIAL NO  ✅ FINAL FIX
+    // ---------------------------------------------------------
+    @Override
+    @Transactional
+    public void softDeleteMeterBySerialNo(String serialNo) {
+
+        int deleted = entityManager.createQuery(
+                        "DELETE FROM Meter m WHERE m.serialNo = :serialNo"
+                )
+                .setParameter("serialNo", serialNo)
+                .executeUpdate();
+
+        if (deleted == 0) {
+            LOGGER.info("No meter deleted for Serial No: " + serialNo);
+        } else {
+            LOGGER.info("Meter deleted successfully. Serial No: " + serialNo);
+        }
+    }
+
+
+
+    // ---------------------------------------------------------
+    //  HEADER COUNT FOR YEAR
+    // ---------------------------------------------------------
     @Override
     public long getMeterHeaderCountForYear(int year) {
         try {
@@ -68,6 +121,9 @@ public class MeterDaoImpl implements MeterDao {
         }
     }
 
+    // ---------------------------------------------------------
+    //  GET LAST CEB SERIAL
+    // ---------------------------------------------------------
     @Override
     public String getLastCebSerialNo() {
         try {
@@ -76,9 +132,7 @@ public class MeterDaoImpl implements MeterDao {
                     String.class
             );
             query.setMaxResults(1);
-
             return query.getSingleResult();
-
         } catch (Exception e) {
             LOGGER.info("No previous CEB Serial found, starting fresh.");
             return null;
@@ -86,7 +140,7 @@ public class MeterDaoImpl implements MeterDao {
     }
 
     // ---------------------------------------------------------
-    //   NEW — GET LAST CEB SERIAL FOR SPECIFIC YEAR
+    //  GET LAST CEB SERIAL FOR YEAR
     // ---------------------------------------------------------
     @Override
     public String getLastCebSerialForYear(String year2Digits) {
@@ -99,14 +153,15 @@ public class MeterDaoImpl implements MeterDao {
             );
             query.setParameter("prefix", "TRM/METER/" + year2Digits + "/%");
             query.setMaxResults(1);
-
             return query.getSingleResult();
-
         } catch (Exception e) {
-            return null; // no records for this year
+            return null;
         }
     }
 
+    // ---------------------------------------------------------
+    //  SAVE METER LIST
+    // ---------------------------------------------------------
     @Override
     @Transactional
     public void saveMeterList(List<Meter> meters) {
@@ -116,4 +171,28 @@ public class MeterDaoImpl implements MeterDao {
             entityManager.merge(meter);
         }
     }
+
+    @Override
+    public int getNextCebSerialNumberForYear(String year2Digits) {
+        try {
+            String jpql = """
+            SELECT MAX(
+                CAST(SUBSTRING(m.cebSerialNo, LENGTH(m.cebSerialNo) - 4, 5) AS integer)
+            )
+            FROM Meter m
+            WHERE m.cebSerialNo LIKE :prefix
+            """;
+
+            Integer max = entityManager.createQuery(jpql, Integer.class)
+                    .setParameter("prefix", "TRM/METER/" + year2Digits + "/%")
+                    .getSingleResult();
+
+            return (max == null) ? 1 : max + 1;
+
+        } catch (Exception e) {
+            LOGGER.error("Error getting next CEB serial number", e);
+            return 1;
+        }
+    }
+
 }
