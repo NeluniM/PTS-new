@@ -154,11 +154,25 @@
             <!-- ================= BUTTONS ================= -->
             <div class="d-flex justify-content-end mt-4 mb-4" id="meterActionButtons">
 
-            <button type="button" id="showTableBtn" class="btn btn-save-red" style="margin-right:12px;">
+                <button type="submit"
+                        formaction="${pageContext.request.contextPath}/meterManagement"
+                        formmethod="get"
+                        formnovalidate
+                        class="btn btn-outline-secondary"
+                        style="margin-right:12px;">
+                    Cancel
+                </button>
+
+
+
+                <button type="button"
+                        id="showTableBtn"
+                        class="btn btn-save-red">
                     Add Meters
                 </button>
 
             </div>
+
 
             <!-- ================= ADD METER TABLE ================= -->
             <div id="serialTableWrapper" class="card mt-4" style="display:none;">
@@ -330,6 +344,10 @@
         }
     });
 </script>
+
+
+
+
 
 
 </body>
