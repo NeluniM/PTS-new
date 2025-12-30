@@ -236,16 +236,51 @@
         addRow();
     });
 
+
+
+</script>
+
+<script>
     function addRow() {
         $("#serialTable tbody").append(`
-            <tr>
-                <td>
-                    <input type="text" name="serials[]" class="form-control">
-                </td>
-            </tr>
-        `);
+        <tr>
+            <td>
+                <input type="text"
+                       name="serials"
+                       class="form-control serial-input">
+                <small class="text-danger serial-error" style="display:none;">
+                    Serial number already exists
+                </small>
+            </td>
+        </tr>
+    `);
     }
 </script>
+
+<script>
+    $(document).on("blur", ".serial-input", function () {
+
+        let input = $(this);
+        let serialNo = input.val().trim();
+        let errorText = input.siblings(".serial-error");
+
+        if (serialNo === "") return;
+
+        $.ajax({
+            url: "${pageContext.request.contextPath}/meter/checkSerial",
+            method: "GET",
+            data: { serialNo: serialNo },
+            success: function (res) {
+                if (res === "EXISTS") {
+                    input.addClass("is-invalid");
+                    errorText.text("Serial number already exists");
+                    errorText.show();
+                }
+            }
+        });
+    });
+</script>
+
 
 <script>
 
@@ -262,6 +297,38 @@
         setPageTitle("Install New Meter");
     });
 
+</script>
+
+
+
+
+<script>
+    $("form").on("submit", function (e) {
+
+        let seen = {};
+        let hasDuplicate = false;
+
+        $(".serial-input").each(function () {
+            let val = $(this).val().trim().toUpperCase();
+
+            if (val === "") return;
+
+            if (seen[val]) {
+                hasDuplicate = true;
+                $(this).addClass("is-invalid");
+                $(this).siblings(".serial-error")
+                    .text("Duplicate serial number")
+                    .show();
+            } else {
+                seen[val] = true;
+            }
+        });
+
+        if (hasDuplicate) {
+            alert("Duplicate serial numbers found. Please correct them.");
+            e.preventDefault();
+        }
+    });
 </script>
 
 
