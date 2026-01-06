@@ -176,11 +176,6 @@ public class MeterPointController {
             @RequestParam(name = "serials", required = false) List<String> serials,
             Model model) {
 
-        // 🔥 HANDLE CANCEL BUTTON
-        if ("true".equals(params.get("_cancel"))) {
-            return "redirect:/meterManagement";
-        }
-
         try {
 
             LOGGER.info("Install New Meter submitted. Params = " + params);
