@@ -173,20 +173,46 @@ public class MeterPointController {
     @RequestMapping(value = "/installMeter", method = RequestMethod.POST)
     public String saveInstallMeter(
             @RequestParam Map<String, String> params,
-            @RequestParam(name = "serials[]", required = false) List<String> serials,
+            @RequestParam(name = "serials", required = false) List<String> serials,
             Model model) {
 
-        LOGGER.info("Install New Meter submitted. Params = " + params);
-
         try {
-            // ================================
-            // 1) CREATE & SAVE METER HEADER
-            // ================================
+
+            LOGGER.info("Install New Meter submitted. Params = " + params);
+
+// ================= SERIAL VALIDATION =================
+            if (serials == null || serials.isEmpty()) {
+                model.addAttribute("msg", "Please enter at least one serial number.");
+                return "pts/licenseeBilling/meterManagement/installMeter";
+            }
+
+            Set<String> uniqueSerials = new HashSet<>();
+
+            for (String s : serials) {
+
+                if (s == null || s.trim().isEmpty()) {
+                    model.addAttribute("msg", "Serial number cannot be empty.");
+                    return "pts/licenseeBilling/meterManagement/installMeter";
+                }
+
+                String serial = s.trim().toUpperCase();
+
+                // 🔴 duplicate inside same submission
+                if (!uniqueSerials.add(serial)) {
+                    model.addAttribute("msg", "Duplicate serial numbers found in the list.");
+                    return "pts/licenseeBilling/meterManagement/installMeter";
+                }
+
+                // 🔴 duplicate already in DB
+                if (meterCrudDao.getMeterBySerialNo(serial) != null) {
+                    model.addAttribute("msg", "Serial number already exists: " + serial);
+                    return "pts/licenseeBilling/meterManagement/installMeter";
+                }
+            }
+
+            // ================= SAVE HEADER =================
             MeterHeader header = new MeterHeader();
-
-            String batchId = generateBatchId();
-            header.setBatchId(batchId);
-
+            header.setBatchId(generateBatchId());
             header.setManufacturedYear(params.get("MANUFACTURED_COUNTRY"));
             header.setQuantity(parseBigDecimal(params.get("QUANTITY")));
             header.setCurrentRating3(parseBigDecimal(params.get("CURRENT_RATING3")));
@@ -204,38 +230,26 @@ public class MeterPointController {
 
             meterCrudDao.saveMeterHeader(header);
 
-            // ================================
-            // 2) SAVE MULTIPLE METERS ✅
-            // ================================
+            // ================= SAVE METERS =================
             int year = LocalDate.now().getYear() % 100;
 
-            if (serials != null) {
-                for (String s : serials) {
+            for (String s : serials) {
+                int nextNo = meterCrudDao.getNextCebSerialNumberForYear(String.format("%02d", year));
+                String cebSerial = String.format("TRM/METER/%02d/%05d", year, nextNo);
 
-                    int nextNo = meterCrudDao
-                            .getNextCebSerialNumberForYear(String.format("%02d", year));
+                Meter meter = new Meter();
+                meter.setMeterHeader(header);
+                meter.setCebSerialNo(cebSerial);
+                meter.setSerialNo(s.trim().toUpperCase());
+                meter.setStatus("AVL");
+                meter.setCreatedBy(params.get("CREATED_BY"));
+                meter.setUpdatedBy("SYSTEM");
+                meter.setCreatedDate(LocalDate.now());
+                meter.setUpdatedDate(new Date());
 
-                    String cebSerial = String.format(
-                            "TRM/METER/%02d/%05d",
-                            year,
-                            nextNo
-                    );
-
-                    Meter meter = new Meter();
-                    meter.setMeterHeader(header);
-                    meter.setCebSerialNo(cebSerial);
-                    meter.setSerialNo(s == null ? null : s.trim());
-                    meter.setStatus("AVL");
-                    meter.setCreatedBy(params.get("CREATED_BY"));
-                    meter.setUpdatedBy("SYSTEM");
-                    meter.setCreatedDate(LocalDate.now());
-                    meter.setUpdatedDate(new Date());
-
-                    meterCrudDao.saveMeter(meter);
-                }
+                meterCrudDao.saveMeter(meter);
             }
 
-            // ✅ RETURN INSIDE TRY
             return "redirect:/meterManagement";
 
         } catch (Exception e) {
@@ -244,6 +258,7 @@ public class MeterPointController {
             return "pts/licenseeBilling/meterManagement/installMeter";
         }
     }
+
 
 
     // 4

@@ -59,6 +59,15 @@
 
     <div class="container meter-form-wrapper">
 
+        <c:if test="${not empty msg}">
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    ${msg}
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+            </div>
+        </c:if>
+
         <form action="installMeter" method="post">
 
             <!-- ========================= METER HEADER ONLY ========================= -->
@@ -179,8 +188,19 @@
                     <button type="button" id="addRowBtn" class="btn btn-outline-primary">Add Row</button>
 
                     <div class="d-flex justify-content-end mt-4">
-                        <button type="submit" class="btn btn-save-red">Submit All</button>
+                        <button type="button"
+                                class="btn btn-secondary"
+                                onclick="window.location.href='${pageContext.request.contextPath}/meterManagement'">
+                            Cancel
+                        </button>
+
+                        <button type="submit"
+                                class="btn btn-save-red"
+                                style="margin-left:10px;">
+                            Submit All
+                        </button>
                     </div>
+
                 </div>
             </div>
 
@@ -263,6 +283,15 @@
     });
 
 </script>
+
+<c:if test="${not empty msg}">
+    <script>
+        $(document).ready(function () {
+            $("#serialTableWrapper").show();
+        });
+    </script>
+</c:if>
+
 
 
 </body>
