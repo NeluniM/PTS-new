@@ -20,4 +20,13 @@ public class MeterPointDaoImpl implements MeterPointDao {
         query.setParameter("serialNo", serialNo);
         return query.getResultStream().findFirst().orElse(null);
     }
+
+    @Override
+    @Transactional
+    public void save(MeterPoint meterPoint) {
+        entityManager.merge(meterPoint);
+        entityManager.flush(); // 🔥 forces Oracle insert
+    }
+
+
 }

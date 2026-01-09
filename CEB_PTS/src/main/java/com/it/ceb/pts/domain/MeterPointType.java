@@ -16,7 +16,8 @@ import lombok.Setter;
 public class MeterPointType {
     @Id
     @Column(name = "POINT_TYPE_ID", nullable = false)
-    private Boolean id = false;
+    private Long id;
+
 
     @Size(max = 100)
     @NotNull

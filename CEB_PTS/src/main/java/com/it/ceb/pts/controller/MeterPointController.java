@@ -9,6 +9,8 @@ import com.it.ceb.pts.repo.MeterProcessDao;
 import com.it.ceb.pts.repo.MeterReadingDao;
 import com.it.ceb.pts.repo.ProvinceDao;
 import com.it.ceb.pts.repo.MeterDao; // ✅ NEW IMPORT
+import com.it.ceb.pts.repo.MeterPointDao;
+
 
 import com.it.ceb.util.common.ExcelMeterReader;
 import com.it.ceb.util.common.ConfigProperties;
@@ -71,6 +73,9 @@ public class MeterPointController {
     @Autowired
     private MeterProcessDao meterDao; // ⬅️ keep as-is (used in processFilesTest)
 
+    @Autowired
+    private MeterPointDao meterPointDao;
+
     // ✅ NEW: JPA DAO for Meter + MeterHeader CRUD
     @Autowired
     private MeterDao meterCrudDao;
@@ -114,12 +119,12 @@ public class MeterPointController {
     //processMeterReading
     @Transactional
     @RequestMapping(value = "/processMeterReading", method = RequestMethod.GET)
-    public String processMeterReading(Model model) throws Exception{
+    public String processMeterReading(Model model) throws Exception {
         BillCycle billCycle = meterProcessDao.getCurrentBillCycle();
         List<DistributionLicense> licenseList = DistributionLicenseDao.getLicenseList();
         List<Province> provinceList = provinceDao.getAllProvince();
-        model.addAttribute("licenseList",licenseList);
-        model.addAttribute("provinceList",new ObjectMapper().writeValueAsString(modelService.getAllProvinces(provinceList)));
+        model.addAttribute("licenseList", licenseList);
+        model.addAttribute("provinceList", new ObjectMapper().writeValueAsString(modelService.getAllProvinces(provinceList)));
         model.addAttribute("billCycleNo", billCycle.getBillCycleNo());
         return "pts/licenseeBilling/processReading/processMeterReading"; // Return the same page after form submission
     }
@@ -258,7 +263,6 @@ public class MeterPointController {
             return "pts/licenseeBilling/meterManagement/installMeter";
         }
     }
-
 
 
     // 4
@@ -412,20 +416,20 @@ public class MeterPointController {
     //viewMeterReading
     @Transactional
     @RequestMapping(value = "/viewMeterReading", method = RequestMethod.GET)
-    public String viewMeterReading(Model model) throws Exception{
+    public String viewMeterReading(Model model) throws Exception {
         BillCycle billCycle = meterProcessDao.getCurrentBillCycle();
         List<DistributionLicense> licenseList = DistributionLicenseDao.getLicenseList();
         List<Province> provinceList = provinceDao.getAllProvince();
-        model.addAttribute("licenseList",licenseList);
+        model.addAttribute("licenseList", licenseList);
         model.addAttribute("billCycleNo", billCycle.getBillCycleNo());
-        model.addAttribute("provinceList",new ObjectMapper().writeValueAsString(modelService.getAllProvinces(provinceList)));
+        model.addAttribute("provinceList", new ObjectMapper().writeValueAsString(modelService.getAllProvinces(provinceList)));
         return "pts/licenseeBilling/viewReading/viewMeterReading"; // Return the same page after form submission
     }
 
     //bill calculation
     @Transactional
     @RequestMapping(value = "/billCalc", method = RequestMethod.GET)
-    public String billCalc(Model model) throws Exception{
+    public String billCalc(Model model) throws Exception {
         BillCycle billCycle = meterProcessDao.getCurrentBillCycle();
         List<DistributionLicense> licenseList = DistributionLicenseDao.getLicenseList();
         List<TxnMaster> txnList = invoiceDao.getTxnList();
@@ -433,9 +437,9 @@ public class MeterPointController {
         invoiceDao.prepareProvinceSummary(billCycle.getBillCycleNo(), "DD1");
         List<ProvinceEnergySummaryModel> list = invoiceDao.getProvinceEnergySummaryList();
         model.addAttribute("SummaryList", list);
-        model.addAttribute("licenseList",licenseList);
+        model.addAttribute("licenseList", licenseList);
         model.addAttribute("billCycleNo", billCycle.getBillCycleNo());
-        model.addAttribute("txnList",txnList);
+        model.addAttribute("txnList", txnList);
         model.addAttribute("invoiceTXNlist", invoiceTxnList);
         return "pts/licenseeBilling/billCalculate/billCalculate"; // Return the same page after form submission
     }
@@ -444,17 +448,17 @@ public class MeterPointController {
     @Transactional
     @RequestMapping(value = "/invoice", method = RequestMethod.GET)
     public String invoice(Model model,
-                          @RequestParam(value="billCycle" ,required = false) String billCycle,
-                          @RequestParam(value="division" ,required = false) String division) throws Exception{
-        String bc="";
-        if(!Objects.equals(billCycle, "")){
+                          @RequestParam(value = "billCycle", required = false) String billCycle,
+                          @RequestParam(value = "division", required = false) String division) throws Exception {
+        String bc = "";
+        if (!Objects.equals(billCycle, "")) {
             bc = meterProcessDao.getCurrentBillCycle().getBillCycleNo().toString();
         }
         List<DistributionLicense> licenseList = DistributionLicenseDao.getLicenseList();
         model.addAttribute("billCycleParam", billCycle);
         model.addAttribute("billCycleNo", bc);
         model.addAttribute("divisionParam", division);
-        model.addAttribute("licenseList",licenseList);
+        model.addAttribute("licenseList", licenseList);
         return "pts/licenseeBilling/invoice/invoice"; // Return the same page after form submission
     }
 
@@ -510,8 +514,8 @@ public class MeterPointController {
 
             //loading the error meter points-------------------------------
             LOGGER.info("Checking for error meters");
-            if(!meterPoints.isEmpty()&&meterPoints.size()>0){
-                List<MeterReadingErrLog> errorMeterList = meterReadingDao.getErrorMeterList(billCycle,division,province);
+            if (!meterPoints.isEmpty() && meterPoints.size() > 0) {
+                List<MeterReadingErrLog> errorMeterList = meterReadingDao.getErrorMeterList(billCycle, division, province);
                 //checking the error meters present in the meterPoints with above errorMeterList
                 for (MeterReadingErrLog errorLog : errorMeterList) {
                     for (MeterPointModel point : meterPoints) {
@@ -531,22 +535,23 @@ public class MeterPointController {
                 LOGGER.info("Getting details for table header");
                 BillCycle bc = meterProcessDao.getBillCycle(billCycle);
                 Date prevDate = new SimpleDateFormat("yyyy-MM-dd").parse(bc.getBillYear() + "-" + bc.getBillMonth() + "-01");
-                Date currntDate =  new SimpleDateFormat("yyyy-MM-dd").parse(bc.getBillYear() + "-" + bc.getBillMonth()+1 + "-01");
+                Date currntDate = new SimpleDateFormat("yyyy-MM-dd").parse(bc.getBillYear() + "-" + bc.getBillMonth() + 1 + "-01");
                 model.addAttribute("billCycle", bc.getBillCycleNo());
                 model.addAttribute("billYear", bc.getBillYear());
                 model.addAttribute("billMonth",
                         java.time.Month.of(bc.getBillMonth().intValue()).name().toLowerCase().substring(0, 1).toUpperCase()
                                 + java.time.Month.of(bc.getBillMonth().intValue()).name().toLowerCase().substring(1)
                 );
-                model.addAttribute("coincidentPeakDate", new SimpleDateFormat("yyyy-MM-dd").format(bc.getCoincidentPeakDate()));;
+                model.addAttribute("coincidentPeakDate", new SimpleDateFormat("yyyy-MM-dd").format(bc.getCoincidentPeakDate()));
+                ;
                 model.addAttribute("coincidentPeakTime", new SimpleDateFormat("HH:mm:ss").format(bc.getCoincidentPeakDate()));
                 model.addAttribute("currentDate", new SimpleDateFormat("yyyy-MM-dd").format(currntDate));
                 model.addAttribute("previousDate", new SimpleDateFormat("yyyy-MM-dd").format(prevDate));
-            }catch(Exception e) {
+            } catch (Exception e) {
                 LOGGER.info("Error in Getting details for table header: " + e.getMessage());
                 //e.printStackTrace();//
             }
-            model.addAttribute("thisBillCycle",billCycle);
+            model.addAttribute("thisBillCycle", billCycle);
             model.addAttribute("meterReadingFileList", meterPoints);
 
         } catch (Exception e) {
@@ -565,13 +570,12 @@ public class MeterPointController {
             @RequestParam("division") String division,
             @RequestParam("province") String province,
             Model model) {
-        try
-        {
+        try {
             String basePath = ConfigProperties.getReadingFilePath();
 
-            String fileName = basePath+"\\440\\LECO\\SP1L\\AMB\\AMB_T01\\211279918-BH.xls";
-            List<MeasureCell> cellAddresses= meterDao.getMeasureCellById("14", "EP");
-            System.out.println("@@@@@@@@@@file reading for testing with fileName"+fileName);
+            String fileName = basePath + "\\440\\LECO\\SP1L\\AMB\\AMB_T01\\211279918-BH.xls";
+            List<MeasureCell> cellAddresses = meterDao.getMeasureCellById("14", "EP");
+            System.out.println("@@@@@@@@@@file reading for testing with fileName" + fileName);
 	        /*try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
 	            String line;
 	            while ((line = br.readLine()) != null) {
@@ -588,24 +592,19 @@ public class MeterPointController {
 	        }*/
             for (MeasureCell cell : cellAddresses) {
                 //BigDecimal val;
-                System.out.println("model column value "+cell.getReadCol());
-                System.out.println("model row value "+cell.getReadRow());
-                if(cell.getReadRow()==null && cell.getReadCol()==null)
-                {
+                System.out.println("model column value " + cell.getReadCol());
+                System.out.println("model row value " + cell.getReadRow());
+                if (cell.getReadRow() == null && cell.getReadCol() == null) {
                     System.out.println("no any cell to read");
 
-                }
-                else if(cell.getReadRow()==null)
-                {
+                } else if (cell.getReadRow() == null) {
                     System.out.println("reading last row........");
                     String cellVal = excelMeterReader.readLastRowOfColumn(fileName, cell.getReadCol());
-                    System.out.println("read last row"+cellVal);
-                }
-                else
-                {
+                    System.out.println("read last row" + cellVal);
+                } else {
                     System.out.println("reading cel value.............");
-                    String cellVal = excelMeterReader.readCellValue(fileName,  cell.getReadCol(), cell.getReadRow().intValue());
-                    System.out.println("read cell value"+cellVal);
+                    String cellVal = excelMeterReader.readCellValue(fileName, cell.getReadCol(), cell.getReadRow().intValue());
+                    System.out.println("read cell value" + cellVal);
                 }
 	            /*if (cell.getCell().matches("[A-Z]\\d+")) {
 	            	System.out.println("cell value is given ");
@@ -636,7 +635,7 @@ public class MeterPointController {
             Model model) {
         //String basePath = ConfigProperties.getReportPath();
         String basePath = ConfigProperties.getReadingFilePath();
-        String fullPath = basePath +"\\"+ billCycle + "\\"+division + "\\" + province+ "\\";
+        String fullPath = basePath + "\\" + billCycle + "\\" + division + "\\" + province + "\\";
         LOGGER.info("Full path for processing files: " + fullPath);
         try {
 
@@ -648,7 +647,7 @@ public class MeterPointController {
 
             //check for existing batch records (re processing)-------------------------------------------
             Boolean prevLog = meterProcessDao.checkPreviousReadingLogs(Long.parseLong(billCycle), division, province);
-            if(prevLog) {
+            if (prevLog) {
                 LOGGER.info("Batch process already completed");
                 meterProcessDao.clearExistingMeterReading(Long.parseLong(billCycle), division, province);
                 LOGGER.info("All existing records cleared");
@@ -660,11 +659,11 @@ public class MeterPointController {
 
             LOGGER.info("Files processing started");
             List<MeterReading> meterReadingList = new ArrayList<>();
-            try{
+            try {
                 excelMeterReader.extractExcelFiles(fullPath, billCycle);
                 meterReadingList = excelMeterReader.getProcessedMeterReadings();
 
-            }catch (Exception e) {
+            } catch (Exception e) {
                 LOGGER.info("Error in batch processing: " + e.getMessage());
                 model.addAttribute("msg", ExceptionHandler.handleException(e));
                 return "pts/licenseeBilling/processReading/processTable";
@@ -679,8 +678,8 @@ public class MeterPointController {
             mrLog.setProcessedBy("SYSTEM");
             mrLog.setProcessedDate(new Date());
             mrLog.setFilesRead(excelMeterReader.getSuccessFileCount());
-            mrLog.setFiles(excelMeterReader.getSuccessFileCount()+excelMeterReader.getErrorFileCount());
-            if(excelMeterReader.getErrorFileCount() > 0) {
+            mrLog.setFiles(excelMeterReader.getSuccessFileCount() + excelMeterReader.getErrorFileCount());
+            if (excelMeterReader.getErrorFileCount() > 0) {
                 mrLog.setStatus("WARN");
             } else {
                 mrLog.setStatus("OK");
@@ -693,7 +692,7 @@ public class MeterPointController {
             LOGGER.info("Error files logging started");
             List<MeterReadingErrLog> meterReadingErrLogList = new ArrayList<>();
             for (MeterReadingFileModel meterReadingFileModel : meterReadingFileModelList) {
-                if(Objects.equals(meterReadingFileModel.getStatus(), "ERROR")) {
+                if (Objects.equals(meterReadingFileModel.getStatus(), "ERROR")) {
                     MeterReadingErrLog mrLogError = new MeterReadingErrLog();
                     mrLogError.setSerialNo(meterReadingFileModel.getSerialNo());
                     mrLogError.setCebSerialNo(meterReadingFileModel.getCebSerialNo());
@@ -719,7 +718,7 @@ public class MeterPointController {
             //----------------------------------------
             //  DB writing
             //----------------------------------------
-            try{
+            try {
                 LOGGER.info("DB writing started");
                 meterProcessDao.saveMeterReadings(meterReadingList,
                         meterReadingEnergyList,
@@ -731,7 +730,7 @@ public class MeterPointController {
                 LOGGER.info("Meter readings saved successfully");
                 MeterReadingLog mrl = meterProcessDao.saveMeterReadingLog(mrLog);// log summary
                 LOGGER.info("Log summary saved successfully");
-                meterProcessDao.saveMeterReadingLogErrorList(meterReadingErrLogList,mrl);// log errors
+                meterProcessDao.saveMeterReadingLogErrorList(meterReadingErrLogList, mrl);// log errors
                 LOGGER.info("Log errors saved successfully");
                 //meterProcessDao.saveMeterReadingEnergySummary(meterReadingEnergyList);//meter reading energy summary
                 LOGGER.info("Meter reading energy summary saved successfully");
@@ -740,25 +739,26 @@ public class MeterPointController {
                 LOGGER.info("DB writing completed successfully");
                 //meterProcessDao.lockProvinceProcess(Long.parseLong(billCycle), division, province);
                 LOGGER.info("Province process locked");
-            }catch (Exception e) {
+            } catch (Exception e) {
                 LOGGER.info("Error in DB writing: " + e.getMessage());
                 model.addAttribute("msg", "Error while saving to Database");
                 return "pts/licenseeBilling/processReading/processTable";
             }
 
             //returning result views--------------------------------------
-            model.addAttribute("processSummary",meterProcessDao.getMeterReadingFileModelList());
-            model.addAttribute("energySummary",totalEnergy);
+            model.addAttribute("processSummary", meterProcessDao.getMeterReadingFileModelList());
+            model.addAttribute("energySummary", totalEnergy);
             BillCycle bc = excelMeterReader.getBillCycleObj();
             Date prevDate = new SimpleDateFormat("yyyy-MM-dd").parse(bc.getBillYear() + "-" + bc.getBillMonth() + "-01");
-            Date currntDate =  new SimpleDateFormat("yyyy-MM-dd").parse(bc.getBillYear() + "-" + bc.getBillMonth()+1 + "-01");
+            Date currntDate = new SimpleDateFormat("yyyy-MM-dd").parse(bc.getBillYear() + "-" + bc.getBillMonth() + 1 + "-01");
             model.addAttribute("billCycle", bc.getBillCycleNo());
             model.addAttribute("billYear", bc.getBillYear());
             model.addAttribute("billMonth",
                     java.time.Month.of(bc.getBillMonth().intValue()).name().toLowerCase().substring(0, 1).toUpperCase()
                             + java.time.Month.of(bc.getBillMonth().intValue()).name().toLowerCase().substring(1)
             );
-            model.addAttribute("coincidentPeakDate", new SimpleDateFormat("yyyy-MM-dd").format(bc.getCoincidentPeakDate()));;
+            model.addAttribute("coincidentPeakDate", new SimpleDateFormat("yyyy-MM-dd").format(bc.getCoincidentPeakDate()));
+            ;
             model.addAttribute("coincidentPeakTime", new SimpleDateFormat("HH:mm:ss").format(bc.getCoincidentPeakDate()));
             model.addAttribute("currentDate", new SimpleDateFormat("yyyy-MM-dd").format(currntDate));
             model.addAttribute("previousDate", new SimpleDateFormat("yyyy-MM-dd").format(prevDate));
@@ -778,32 +778,31 @@ public class MeterPointController {
             @RequestParam("billCycle") String billCycle,
             @RequestParam("division") String division,
             Model model
-    ){
+    ) {
         LOGGER.info("Checking invoice...");
         Invoice inv;
         BillCycle bc;
         List<InvoiceTxn> invoiceTXNlist;
-        try{
+        try {
             bc = meterProcessDao.getBillCycle(Long.parseLong(billCycle));// for table properties
-            LOGGER.info("billcycle@@"+bc);
-            if(bc==null)
-            {
+            LOGGER.info("billcycle@@" + bc);
+            if (bc == null) {
                 model.addAttribute("msg", "Bill cycle no does not exist " + billCycle + " :  " + division);
                 return "pts/licenseeBilling/invoice/invoiceTable";
             }
-            inv  = invoiceDao.checkInvoice(Long.parseLong(billCycle), division);
-            LOGGER.info("invoice@@"+inv);
-            if(inv == null){
+            inv = invoiceDao.checkInvoice(Long.parseLong(billCycle), division);
+            LOGGER.info("invoice@@" + inv);
+            if (inv == null) {
                 model.addAttribute("msg", "No invoice found for bill cycle " + billCycle + " :  " + division);
                 return "pts/licenseeBilling/invoice/invoiceTable";
             }
             invoiceTXNlist = invoiceDao.getInvoiceTxnList(Long.parseLong(billCycle), division);
-            LOGGER.info("invoiceTXNlist@@"+invoiceTXNlist);
-            if(inv.getTotalInvoiceCharge() == null){
+            LOGGER.info("invoiceTXNlist@@" + invoiceTXNlist);
+            if (inv.getTotalInvoiceCharge() == null) {
                 model.addAttribute("msg", "No invoice found for bill cycle " + billCycle + " :  " + division);
                 return "pts/licenseeBilling/invoice/invoiceTable";
             }
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             LOGGER.info("Error checking invoice: " + e.getMessage());
             model.addAttribute("msg", "An error while checking invoice");
@@ -815,9 +814,11 @@ public class MeterPointController {
                 java.time.Month.of(bc.getBillMonth().intValue()).name().toLowerCase().substring(0, 1).toUpperCase()
                         + java.time.Month.of(bc.getBillMonth().intValue()).name().toLowerCase().substring(1)
         );
-        model.addAttribute("coincidentPeakDate", new SimpleDateFormat("yyyy-MM-dd").format(bc.getCoincidentPeakDate()));;
+        model.addAttribute("coincidentPeakDate", new SimpleDateFormat("yyyy-MM-dd").format(bc.getCoincidentPeakDate()));
+        ;
         model.addAttribute("coincidentPeakTime", new SimpleDateFormat("HH:mm:ss").format(bc.getCoincidentPeakDate()));
-        model.addAttribute("invoiceDate", new SimpleDateFormat("yyyy-MM-dd").format(inv.getInvoiceCreatedDate()));;
+        model.addAttribute("invoiceDate", new SimpleDateFormat("yyyy-MM-dd").format(inv.getInvoiceCreatedDate()));
+        ;
         model.addAttribute("invoice", inv);
         model.addAttribute("invoiceTXNlist", invoiceTXNlist);
 
@@ -882,7 +883,7 @@ public class MeterPointController {
 
     @Transactional
     @RequestMapping(value = "/invoiceTxn", method = RequestMethod.PUT)
-    public String editInvoiceTxn(@RequestBody InvoiceTXNmodel invoiceTxnModel,Model model) {
+    public String editInvoiceTxn(@RequestBody InvoiceTXNmodel invoiceTxnModel, Model model) {
 
         List<InvoiceTxn> invoiceTXNlist = invoiceDao.getInvoiceTxnList(Long.parseLong(invoiceTxnModel.getBillCycleNo()), invoiceTxnModel.getLicenseCode());
         model.addAttribute("invoiceTXNlist", invoiceTXNlist);
@@ -897,8 +898,7 @@ public class MeterPointController {
             @RequestParam("billCycle") String billCycle,
             @RequestParam("division") String division,
             @RequestParam("txnId") String txnId,
-            Model model)
-    {
+            Model model) {
         LOGGER.info("Deleting invoice transaction with ID: " + txnId);
         invoiceDao.deleteInvoiceTxn(Long.parseLong(txnId));
         List<InvoiceTxn> invoiceTXNlist = invoiceDao.getInvoiceTxnList(Long.parseLong(billCycle), division);
@@ -933,7 +933,7 @@ public class MeterPointController {
             @RequestParam("division") String division) {
         LOGGER.info("Checking if bill is finalized");
         Invoice invc = invoiceDao.checkInvoice(Long.parseLong(billCycle), division);
-        if(invc!= null && invc.getIsCalcClosed()==1L){
+        if (invc != null && invc.getIsCalcClosed() == 1L) {
             LOGGER.info("Bill is already finalized");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("Bill is finalized, no changes allowed");
@@ -943,7 +943,7 @@ public class MeterPointController {
         if (!isCompleted) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("All provinces are not finalized yet");
-        }else{
+        } else {
             LOGGER.info("Province energy summary is completed");
             LOGGER.info("Bill calculation started");
             try {
@@ -983,9 +983,9 @@ public class MeterPointController {
         }
     }
 
-    public void generateReportPDF (HttpServletResponse resp, Map parameters, JasperReport jasperReport, Connection conn)throws Exception {
+    public void generateReportPDF(HttpServletResponse resp, Map parameters, JasperReport jasperReport, Connection conn) throws Exception {
         byte[] bytes = null;
-        bytes = JasperRunManager.runReportToPdf(jasperReport,parameters,conn);
+        bytes = JasperRunManager.runReportToPdf(jasperReport, parameters, conn);
         resp.reset();
         resp.resetBuffer();
         resp.setContentType("application/pdf");
@@ -996,32 +996,30 @@ public class MeterPointController {
         ouputStream.close();
     }
 
-    private JasperReport getCompiledFile(String jrxmlFile,String jasperFile) throws JRException {
-        File reportFile = new File(	jasperFile);
-        JasperCompileManager.compileReportToFile(jrxmlFile,jasperFile);
+    private JasperReport getCompiledFile(String jrxmlFile, String jasperFile) throws JRException {
+        File reportFile = new File(jasperFile);
+        JasperCompileManager.compileReportToFile(jrxmlFile, jasperFile);
         JasperReport jasperReport = (JasperReport) JRLoader.loadObjectFromFile(reportFile.getPath());
         return jasperReport;
         //return null;
     }
 
-    private Connection getReportDbConnection()
-    {
+    private Connection getReportDbConnection() {
         Connection conn = null;
 		/*String connStr = configDao.getConfigValue("REPORT_DB_CON_STR", appName);
 		String user = configDao.getConfigValue("REPORT_DB_USER", appName);
 		String pwd = configDao.getConfigValue("REPORT_DB_PWD", appName);*/
 
-        String connStr ="jdbc:oracle:thin:@10.128.0.56:1521:hqorad1";
+        String connStr = "jdbc:oracle:thin:@10.128.0.56:1521:hqorad1";
         String user = "pstdb";
         String pwd = "devPSTDB";
 		/*
 		String connStr ="jdbc:oracle:thin:@10.128.0.56:1521:hqorad1";
 		String user = "dacons12";
 		String pwd = "dacons12";*/
-        try
-        {
+        try {
             Class.forName("oracle.jdbc.driver.OracleDriver");
-            conn = DriverManager.getConnection(connStr,user,pwd);
+            conn = DriverManager.getConnection(connStr, user, pwd);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -1035,64 +1033,61 @@ public class MeterPointController {
     public void printInvoice(
             @RequestParam("billCycle") String billCycle,
             @RequestParam("division") String division,
-            HttpServletResponse response)
-    {
+            HttpServletResponse response) {
         Connection conn = null;
 
-        try
-        {
+        try {
             HashMap<String, Object> hmParams = new HashMap<String, Object>();
             hmParams.put("@billCycle", Integer.parseInt(billCycle));
             hmParams.put("LicenseCode", division);
 
             conn = getReportDbConnection();
-            String path1 = ConfigProperties.getReportPath() ;
+            String path1 = ConfigProperties.getReportPath();
 
-            File file = new File(path1  + "Bulk_Bill_Licence_H.jrxml" );
-            System.out.println("downloadEstimatecostCenter 3" );
+            File file = new File(path1 + "Bulk_Bill_Licence_H.jrxml");
+            System.out.println("downloadEstimatecostCenter 3");
 
             //if(!file.exists())
             //     throw new RuntimeException("File " + file + " not found. The report design must be compiled first.");
 
             System.out.println("text 32");
-            JasperPrint jasperPrint =null;
-            JRPdfExporter pdf=null;
+            JasperPrint jasperPrint = null;
+            JRPdfExporter pdf = null;
 
-            String invoicePath = path1   +  "Bulk_Bill_Licence_H.jrxml";
+            String invoicePath = path1 + "Bulk_Bill_Licence_H.jrxml";
 
-            System.out.println("text 33" +invoicePath);
-            JasperReport jasperReport =  JasperCompileManager.compileReport(invoicePath);
+            System.out.println("text 33" + invoicePath);
+            JasperReport jasperReport = JasperCompileManager.compileReport(invoicePath);
             System.out.println("Executing SQL for report: " + jasperReport.getQuery().getText());
             // Set up JasperReports font
-            System.out.println("text 34" );
+            System.out.println("text 34");
 
-            System.out.println("jasperReport"+ jasperReport);
-            System.out.println("hmParams"+ hmParams);
-            System.out.println("conn"+ conn);
+            System.out.println("jasperReport" + jasperReport);
+            System.out.println("hmParams" + hmParams);
+            System.out.println("conn" + conn);
 
             jasperPrint = JasperFillManager.fillReport(jasperReport, hmParams, conn);
 
-            System.out.println("text 35" );
+            System.out.println("text 35");
             pdf = new JRPdfExporter();
-            System.out.println("downloadEstimatecostCenter 4"  );
+            System.out.println("downloadEstimatecostCenter 4");
 
-            System.out.println("text 37" );
+            System.out.println("text 37");
 
             Calendar calendar = Calendar.getInstance();
 
             pdf.setParameter(JRPdfExporterParameter.CHARACTER_ENCODING, "UTF-8");
-            String pdfPath= path1 +"439.pdf";
+            String pdfPath = path1 + "439.pdf";
 
             //File pdfFile = new File( pdfPath);
-            System.out.println("pdfPath" +pdfPath );
+            System.out.println("pdfPath" + pdfPath);
             pdf.setParameter(JRPdfExporterParameter.JASPER_PRINT, jasperPrint);
-            pdf.setParameter(JRPdfExporterParameter.OUTPUT_FILE_NAME,  pdfPath);
+            pdf.setParameter(JRPdfExporterParameter.OUTPUT_FILE_NAME, pdfPath);
             pdf.exportReport();
-            System.out.println("downloadEstimatecostCenter 5"+pdfPath );
+            System.out.println("downloadEstimatecostCenter 5" + pdfPath);
 
-            File pdfFile = new File( pdfPath);
-            if (pdfFile.exists())
-            {
+            File pdfFile = new File(pdfPath);
+            if (pdfFile.exists()) {
                 response.setContentType("application/pdf");
                 response.setHeader("Content-Disposition", "inline; filename=\"439.pdf\"");
                 response.setContentLengthLong(pdfFile.length());
@@ -1106,9 +1101,7 @@ public class MeterPointController {
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
+        } catch (Exception ex) {
             ex.printStackTrace();
         }
     }
@@ -1169,6 +1162,107 @@ public class MeterPointController {
         return String.format("TRM/BATCH/%02d/%04d", year, count);
     }
 
+    @Transactional
+    @RequestMapping(value = "/saveMeterPoint", method = RequestMethod.POST)
+    public String saveMeterPoint(@RequestParam Map<String, String> params, Model model) {
+
+        try {
+            LOGGER.info(">>> saveMeterPoint called with params = " + params);
+
+            // =============================
+            // READ FORM VALUES
+            // =============================
+            String serialNo       = params.get("SERIAL_NO");
+            String cebSerialNo    = params.get("CEB_SERIAL_NO");
+            String pointName      = params.get("METER_POINT_NAME");
+            String pointCode      = params.get("METER_POINT_CODE");
+            String licensee       = params.get("LICENSEE_CODE");
+            String cebProvince    = params.get("CEB_PROVINCE_CODE");
+            String areaCode       = params.get("AREA_CODE");
+            String pointTypeIdStr = params.get("POINT_TYPE_ID");
+
+            // =============================
+            // BASIC VALIDATION
+            // =============================
+            if (serialNo == null || cebSerialNo == null || pointName == null
+                    || licensee == null || pointTypeIdStr == null || cebProvince == null) {
+
+                model.addAttribute("msg", "Missing required fields.");
+                return "pts/licenseeBilling/meterManagement/meterPointNew";
+            }
+
+            // =============================
+            // CREATE ENTITY
+            // =============================
+            MeterPoint mp = new MeterPoint();
+
+            mp.setSerialNo(serialNo.trim());
+            mp.setMeterPointName(pointName.trim());
+            mp.setMeterPointCode(pointCode);
+            mp.setLicenseCode(licensee);
+            mp.setStatus(BigDecimal.ONE);
+            mp.setCreatedBy("SYSTEM");
+            mp.setCreatedDate(new Date());
+
+            // =============================
+            // REQUIRED FK — METER
+            // =============================
+            Meter meter = meterCrudDao.getMeterByCebSerialNo(cebSerialNo.trim());
+            if (meter == null) {
+                model.addAttribute("msg", "Invalid CEB Serial No.");
+                return "pts/licenseeBilling/meterManagement/meterPointNew";
+            }
+            mp.setMeter(meter);
+
+            // =============================
+            // REQUIRED FK — POINT TYPE
+            // =============================
+            Long pointTypeId = Long.parseLong(pointTypeIdStr);
+            MeterPointType type = entityManager.getReference(
+                    MeterPointType.class,
+                    pointTypeId
+            );
+            mp.setMeterPointType(type);   // ✅ CORRECT METHOD
+
+            // =============================
+            // REQUIRED FK — CEB PROVINCE
+            // =============================
+            Province cebProv = entityManager.find(Province.class, cebProvince);
+
+            if (cebProv == null) {
+                model.addAttribute("msg", "Invalid CEB Province Code");
+                return "pts/licenseeBilling/meterManagement/meterPointNew";
+            }
+
+            mp.setProvince1(cebProv);
+
+            // =============================
+            // OPTIONAL — AREA
+            // =============================
+            if (areaCode != null && !areaCode.trim().isEmpty()) {
+                Area area = entityManager.getReference(Area.class, areaCode.trim());
+                mp.setArea(area);
+            }
+
+            // =============================
+            // SAVE
+            // =============================
+            meterPointDao.save(mp);
+
+
+            LOGGER.info(">>> MeterPoint SAVED SUCCESSFULLY: " + serialNo);
+            return "redirect:/meterManagement";
+
+
+        } catch (Exception e) {
+            LOGGER.error("SAVE FAILED", e);
+            model.addAttribute("msg", "Save failed: " + e.getMessage());
+            return "pts/licenseeBilling/meterManagement/meterPointNew";
+        }
+    }
+
+
 
 
 }
+

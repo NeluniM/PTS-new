@@ -7,5 +7,9 @@ public interface MeterPointDao {
 
     MeterPoint findBySerialNo(String serialNo) ;
 
+
+    void save(MeterPoint meterPoint);
+
+
 }
 
